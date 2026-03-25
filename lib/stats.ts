@@ -497,11 +497,12 @@ function buildDailyRecapGroups(climbs: ClimbRow[]) {
   });
 
   return Array.from(groups.values()).sort((left, right) => {
-    if (right.count !== left.count) {
-      return right.count - left.count;
+    const gradeOrder = compareGradeLabel(right.label, left.label);
+    if (gradeOrder !== 0) {
+      return gradeOrder;
     }
 
-    return compareGradeLabel(right.label, left.label);
+    return right.count - left.count;
   });
 }
 
