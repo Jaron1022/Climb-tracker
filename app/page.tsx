@@ -51,7 +51,7 @@ export default function HomePage() {
   const [isComposerOpen, setIsComposerOpen] = useState(false);
   const [showSaveBurst, setShowSaveBurst] = useState(false);
   const [historyGradeFilter, setHistoryGradeFilter] = useState<"All" | ClimbRow["grade"]>("All");
-  const [progressRange, setProgressRange] = useState<ProgressRange>("3M");
+  const [progressRange, setProgressRange] = useState<ProgressRange>("ALL");
 
   const syncUserData = useCallback(async (userId: string) => {
     if (!userId) {
@@ -786,20 +786,6 @@ export default function HomePage() {
                       <div className="xp-progress-fill" style={{ width: `${stats.xpProgressPercent}%` }} />
                     </div>
                   </div>
-                  <div className="level-summary-grid">
-                    <article className="stat-card compact-stat-card">
-                      <span>Total sends</span>
-                      <strong>{stats.totalCompleted}</strong>
-                    </article>
-                    <article className="stat-card compact-stat-card">
-                      <span>Favorite style</span>
-                      <strong>{stats.favoriteStyles[0] ?? "Still learning"}</strong>
-                    </article>
-                    <article className="stat-card compact-stat-card level-summary-wide">
-                      <span>Personal best</span>
-                      <strong>{stats.personalBest}</strong>
-                    </article>
-                  </div>
                 </section>
               </section>
 
@@ -816,8 +802,8 @@ export default function HomePage() {
                     <>
                       <p className="muted daily-recap-subtitle dashboard-recap-subtitle">
                         {progressStats.dailyRecap.isToday
-                          ? `Today • ${prettyDate(progressStats.dailyRecap.climbedOn)}`
-                          : `Last session • ${prettyDate(progressStats.dailyRecap.climbedOn)}`}
+                          ? `Today | ${prettyDate(progressStats.dailyRecap.climbedOn)}`
+                          : `Last session | ${prettyDate(progressStats.dailyRecap.climbedOn)}`}
                       </p>
                       <div className="daily-recap-pill-row dashboard-recap-pills">
                         <span className="daily-pill">{progressStats.dailyRecap.sends} sends</span>
@@ -832,7 +818,7 @@ export default function HomePage() {
                                 <strong>{group.label}</strong>
                                 <span className="muted">
                                   {group.count} climb{group.count > 1 ? "s" : ""}
-                                  {group.flashedCount > 0 ? ` • ${group.flashedCount} flash${group.flashedCount > 1 ? "es" : ""}` : ""}
+                                  {group.flashedCount > 0 ? ` | ${group.flashedCount} flash${group.flashedCount > 1 ? "es" : ""}` : ""}
                                 </span>
                               </div>
                               <div className="daily-recap-bar-track" aria-hidden="true">
@@ -1024,7 +1010,7 @@ export default function HomePage() {
               <section className="panel progress-hero">
                 <div className="section-title-row">
                   <div>
-                    <p className="eyebrow">Progress</p>
+                    <p className="eyebrow">{progressRange === "ALL" ? "All-time stats" : "Progress"}</p>
                     <h2>{progressStats.rangeLabel}</h2>
                     <p className="muted progress-cadence">{progressStats.cadenceLabel}</p>
                   </div>
@@ -1045,65 +1031,29 @@ export default function HomePage() {
 
                 <div className="progress-kpi-grid">
                   <article className="stat-card">
-                    <span>Sends</span>
+                    <span>{progressRange === "ALL" ? "Total sends" : "Sends"}</span>
                     <strong>{progressStats.sends}</strong>
                   </article>
                   <article className="stat-card">
-                    <span>XP earned</span>
+                    <span>{progressRange === "ALL" ? "Total XP" : "XP earned"}</span>
                     <strong>{progressStats.totalXp}</strong>
                   </article>
                   <article className="stat-card">
-                    <span>Weekly streak</span>
-                    <strong>{progressStats.weeklyStreak} wk</strong>
+                    <span>{progressRange === "ALL" ? "Favorite style" : "Weekly streak"}</span>
+                    <strong>
+                      {progressRange === "ALL"
+                        ? stats.favoriteStyles[0] ?? "Still learning"
+                        : `${progressStats.weeklyStreak} wk`}
+                    </strong>
                   </article>
                   <article className="stat-card">
-                    <span>Consistency</span>
-                    <strong>{Math.round(progressStats.consistencyPercent)}%</strong>
+                    <span>{progressRange === "ALL" ? "Personal best" : "Consistency"}</span>
+                    <strong>
+                      {progressRange === "ALL"
+                        ? stats.personalBest
+                        : `${Math.round(progressStats.consistencyPercent)}%`}
+                    </strong>
                   </article>
-                </div>
-              </section>
-
-              <section className="panel all-time-panel">
-                <div className="section-title-row">
-                  <div>
-                    <p className="eyebrow">All-time stats</p>
-                    <h2>Your full logbook</h2>
-                  </div>
-                </div>
-
-                <div className="progress-kpi-grid">
-                  <article className="stat-card">
-                    <span>Total sends</span>
-                    <strong>{stats.totalCompleted}</strong>
-                  </article>
-                  <article className="stat-card">
-                    <span>Total XP</span>
-                    <strong>{stats.xp}</strong>
-                  </article>
-                  <article className="stat-card">
-                    <span>Favorite style</span>
-                    <strong>{stats.favoriteStyles[0] ?? "Still learning"}</strong>
-                  </article>
-                  <article className="stat-card">
-                    <span>Personal best</span>
-                    <strong>{stats.personalBest}</strong>
-                  </article>
-                </div>
-
-                <div className="grade-breakdown">
-                  {CLIMB_GRADES.map((grade) => {
-                    const count = stats.completedByGrade[grade] ?? 0;
-                    const fillPercent = maxGradeCount > 0 ? (count / maxGradeCount) * 100 : 0;
-                    return (
-                      <div className="grade-row" key={grade}>
-                        <span>{grade}</span>
-                        <div className="grade-bar-track">
-                          <div className="grade-bar-fill" style={{ width: `${fillPercent}%` }} />
-                        </div>
-                        <strong>{count}</strong>
-                      </div>
-                    );
-                  })}
                 </div>
               </section>
 
