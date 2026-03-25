@@ -1001,6 +1001,60 @@ export default function HomePage() {
 
           {activeView === "progress" ? (
             <section className="progress-view">
+              <section className="panel daily-recap-hero">
+                <div className="daily-recap-hero-copy">
+                  <div>
+                    <p className="eyebrow">Daily recap</p>
+                    <h2>
+                      {progressStats.dailyRecap ? progressStats.dailyRecap.headline : "No session in this range yet"}
+                    </h2>
+                    {progressStats.dailyRecap ? (
+                      <>
+                        <p className="daily-recap-date">{prettyDate(progressStats.dailyRecap.climbedOn)}</p>
+                        <p className="daily-recap-subtitle">
+                          {progressStats.dailyRecapScope === "range"
+                            ? progressStats.dailyRecap.subheadline
+                            : `Showing your latest session overall. ${progressStats.dailyRecap.subheadline}`}
+                        </p>
+                      </>
+                    ) : (
+                      <p className="daily-recap-subtitle">Log a climb in this date range and your session recap will show up here.</p>
+                    )}
+                  </div>
+                  {progressStats.dailyRecap ? (
+                    <div className="daily-recap-score">
+                      <span>Session XP</span>
+                      <strong>+{progressStats.dailyRecap.totalXp}</strong>
+                    </div>
+                  ) : null}
+                </div>
+
+                {progressStats.dailyRecap ? (
+                  <>
+                    <div className="daily-recap-pill-row">
+                      <span className="daily-pill">{progressStats.dailyRecap.sends} sends</span>
+                      <span className="daily-pill">
+                        {progressStats.dailyRecap.flashedCount > 0 ? `${progressStats.dailyRecap.flashedCount} flash${progressStats.dailyRecap.flashedCount > 1 ? "es" : ""}` : "Built momentum"}
+                      </span>
+                      {progressStats.dailyRecap.topGrade ? <span className="daily-pill">Top send {progressStats.dailyRecap.topGrade}</span> : null}
+                      {progressStats.dailyRecap.topStyle ? <span className="daily-pill">{progressStats.dailyRecap.topStyle} day</span> : null}
+                    </div>
+
+                    <div className="daily-recap-list">
+                      {progressStats.dailyRecap.climbs.map((climb) => (
+                        <div className="daily-recap-row" key={climb.id}>
+                          <div>
+                            <strong>{climb.label}</strong>
+                            {climb.note ? <p className="muted daily-recap-note">{climb.note}</p> : null}
+                          </div>
+                          <span className="daily-recap-xp">+{climb.xp}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                ) : null}
+              </section>
+
               <section className="panel progress-hero">
                 <div className="section-title-row">
                   <div>
@@ -1022,48 +1076,6 @@ export default function HomePage() {
                     </button>
                   ))}
                 </div>
-
-                <section className="daily-recap-card">
-                  <div className="section-title-row daily-recap-header">
-                    <div>
-                      <p className="eyebrow">Daily recap</p>
-                      <h3>
-                        {progressStats.dailyRecap
-                          ? prettyDate(progressStats.dailyRecap.climbedOn)
-                          : "No climbs in this range yet"}
-                      </h3>
-                      {progressStats.dailyRecap ? (
-                        <p className="muted daily-recap-subtitle">
-                          {progressStats.dailyRecapScope === "range"
-                            ? "Most recent climbing day in this selected range."
-                            : "No climbs in this selected range yet, so this is your latest climbing day overall."}
-                        </p>
-                      ) : null}
-                    </div>
-                    {progressStats.dailyRecap ? (
-                      <div className="daily-recap-summary">
-                        <span>{progressStats.dailyRecap.sends} climbs</span>
-                        <strong>+{progressStats.dailyRecap.totalXp} XP</strong>
-                      </div>
-                    ) : null}
-                  </div>
-
-                  {progressStats.dailyRecap ? (
-                    <div className="daily-recap-list">
-                      {progressStats.dailyRecap.climbs.map((climb) => (
-                        <div className="daily-recap-row" key={climb.id}>
-                          <div>
-                            <strong>{climb.label}</strong>
-                            {climb.note ? <p className="muted daily-recap-note">{climb.note}</p> : null}
-                          </div>
-                          <span className="daily-recap-xp">+{climb.xp}</span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="muted daily-recap-empty">Log a climb in this date range and your recap will show up here.</p>
-                  )}
-                </section>
 
                 <div className="progress-kpi-grid">
                   <article className="stat-card">

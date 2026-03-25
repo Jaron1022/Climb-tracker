@@ -449,11 +449,19 @@ function buildDailyRecap(climbs: ClimbRow[]) {
     (total, climb) => total + climbToXp(climb.grade, Boolean(climb.flashed), climb.grade_modifier ?? null),
     0
   );
+  const flashedCount = dayClimbs.filter((climb) => climb.flashed).length;
+  const topClimb = dayClimbs[0];
+  const topStyle = mostCommonTag(dayClimbs);
 
   return {
     climbedOn: mostRecentDate,
     totalXp,
     sends: dayClimbs.length,
+    flashedCount,
+    topGrade: topClimb ? `${topClimb.grade}${topClimb.grade_modifier ?? ""}` : null,
+    topStyle,
+    headline: buildDailyRecapHeadline(dayClimbs.length, totalXp, flashedCount),
+    subheadline: buildDailyRecapSubheadline(dayClimbs.length, topClimb ? `${topClimb.grade}${topClimb.grade_modifier ?? ""}` : null),
     climbs: dayClimbs.map((climb) => ({
       id: climb.id,
       label: `${climb.grade}${climb.grade_modifier ?? ""}${climb.flashed ? " flash" : ""}`,
@@ -461,6 +469,44 @@ function buildDailyRecap(climbs: ClimbRow[]) {
       note: climb.wall_name ?? climb.notes ?? ""
     }))
   };
+}
+
+function buildDailyRecapHeadline(sends: number, totalXp: number, flashedCount: number) {
+  if (flashedCount > 0 && sends > 1) {
+    return "Strong session";
+  }
+
+  if (totalXp >= 150) {
+    return "Big progress day";
+  }
+
+  if (sends >= 3) {
+    return "Nice volume session";
+  }
+
+  if (sends >= 1) {
+    return "You showed up and logged work";
+  }
+
+  return "Session recap";
+}
+
+function buildDailyRecapSubheadline(sends: number, topGrade: string | null) {
+  if (topGrade && sends > 1) {
+    return `${sends} sends on the board, led by ${topGrade}.`;
+  }
+
+  if (topGrade) {
+    return `One meaningful send at ${topGrade}.`;
+  }
+
+  return "Every session you track makes the bigger picture clearer.";
+}
+
+function mostCommonTag(climbs: ClimbRow[]) {
+  const counts = countTags(climbs);
+  const topEntry = Object.entries(counts).sort((left, right) => right[1] - left[1])[0];
+  return topEntry?.[0] ?? null;
 }
 
 function formatAverageFlashGrade(climbs: ClimbRow[]) {
