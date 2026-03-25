@@ -291,6 +291,10 @@ button {
   gap: 0.85rem;
 }
 
+.progress-grade-breakdown {
+  margin-top: 1rem;
+}
+
 .daily-recap-hero {
   position: relative;
   overflow: hidden;
@@ -558,6 +562,14 @@ button {
   gap: 0.9rem;
 }
 
+.progress-grid > .panel .flash-breakdown:not(.flash-breakdown-standalone) {
+  display: none;
+}
+
+.flash-breakdown-standalone {
+  margin-top: 0;
+}
+
 .flash-breakdown-header {
   display: flex;
   justify-content: space-between;
@@ -577,13 +589,20 @@ button {
   gap: 0.2rem;
 }
 
+.flash-breakdown-summary-left {
+  display: grid;
+  gap: 0.2rem;
+}
+
 .flash-breakdown-summary span,
+.flash-breakdown-summary-left span,
 .flash-overview-row span {
   color: var(--muted);
   font-size: 0.88rem;
 }
 
-.flash-breakdown-summary strong {
+.flash-breakdown-summary strong,
+.flash-breakdown-summary-left strong {
   font-size: 1.2rem;
 }
 

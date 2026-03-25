@@ -395,6 +395,11 @@ export default function HomePage() {
   );
   const recentClimbs = filteredClimbs.slice(0, 12);
   const canSaveClimb = Boolean(activeProfileId) && !loading && !booting;
+  const selectedGradeCounts = progressRange === "ALL" ? stats.completedByGrade : progressStats.completedByGrade;
+  const selectedGradeMax = useMemo(
+    () => Math.max(1, ...CLIMB_GRADES.map((grade) => selectedGradeCounts[grade] ?? 0)),
+    [selectedGradeCounts]
+  );
   const trendChart = useMemo(() => {
     const buckets = progressStats.buckets;
     const width = 100;
@@ -1055,6 +1060,22 @@ export default function HomePage() {
                     </strong>
                   </article>
                 </div>
+
+                <div className="grade-breakdown progress-grade-breakdown">
+                  {CLIMB_GRADES.map((grade) => {
+                    const count = selectedGradeCounts[grade] ?? 0;
+                    const fillPercent = selectedGradeMax > 0 ? (count / selectedGradeMax) * 100 : 0;
+                    return (
+                      <div className="grade-row" key={grade}>
+                        <span>{grade}</span>
+                        <div className="grade-bar-track">
+                          <div className="grade-bar-fill" style={{ width: `${fillPercent}%` }} />
+                        </div>
+                        <strong>{count}</strong>
+                      </div>
+                    );
+                  })}
+                </div>
               </section>
 
               <section className="progress-grid">
@@ -1181,6 +1202,45 @@ export default function HomePage() {
                     Consistency means the share of calendar weeks in this range where you logged at least one climb.
                     {` ${progressStats.activeWeeks} of ${progressStats.totalWeeks} weeks were active.`}
                   </p>
+                </section>
+                <section className="panel flash-panel">
+                  <div className="section-title-row">
+                    <div>
+                      <p className="eyebrow">Flash breakdown</p>
+                      <h2>First-try sends by grade</h2>
+                    </div>
+                  </div>
+                  <section className="flash-breakdown flash-breakdown-standalone">
+                    <div className="flash-breakdown-header">
+                      <div className="flash-breakdown-summary-left">
+                        <span>Overall flash rate</span>
+                        <strong>{progressStats.flashRatePercent}%</strong>
+                      </div>
+                      <div className="flash-breakdown-summary">
+                        <span>Average flash grade</span>
+                        <strong>{progressStats.averageFlashGrade}</strong>
+                      </div>
+                    </div>
+                    <div className="flash-grade-list">
+                      {progressStats.flashRateByGrade.map((item) => (
+                        <div className="flash-grade-row" key={item.grade}>
+                          <span>{item.grade}</span>
+                          <div
+                            aria-hidden="true"
+                            className={clsx("flash-grade-track", item.flashRatePercent === null && "is-empty")}
+                          >
+                            <div
+                              className="flash-grade-fill"
+                              style={{ width: `${item.flashRatePercent ?? 0}%` }}
+                            />
+                          </div>
+                          <strong className={clsx(item.flashRatePercent === null && "muted")}>
+                            {item.flashRatePercent === null ? "—" : `${item.flashRatePercent}%`}
+                          </strong>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
                 </section>
               </section>
             </section>

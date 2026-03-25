@@ -79,6 +79,13 @@ export function buildProgressStats(climbs: ClimbRow[], range: ProgressRange) {
     .sort((left, right) => right[1] - left[1])
     .slice(0, 3)
     .map(([tag]) => tag);
+  const completedByGrade = CLIMB_GRADES.reduce(
+    (accumulator, grade) => {
+      accumulator[grade] = filteredClimbs.filter((climb) => climb.grade === grade).length;
+      return accumulator;
+    },
+    {} as Record<Grade, number>
+  );
   const weeklyStreak = countWeeklyStreak(filteredClimbs);
   const averagePerActiveWeek = activeWeeks > 0 ? filteredClimbs.length / activeWeeks : 0;
   const consistencyPercent = Math.min((activeWeeks / totalWeeks) * 100, 100);
@@ -112,6 +119,7 @@ export function buildProgressStats(climbs: ClimbRow[], range: ProgressRange) {
     flashRatePercent: filteredClimbs.length > 0 ? Math.round((flashCount / filteredClimbs.length) * 100) : 0,
     averageFlashGrade,
     flashRateByGrade,
+    completedByGrade,
     averagePerActiveWeek,
     topGrade: topClimb ? formatPersonalBest(topClimb) : "No sends yet",
     topStyles,
