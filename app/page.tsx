@@ -81,6 +81,39 @@ export default function HomePage() {
   const [pendingOutgoingFriendIds, setPendingOutgoingFriendIds] = useState<string[]>([]);
   const [progressRange, setProgressRange] = useState<ProgressRange>("ALL");
 
+  const hydrateFriendState = useCallback(
+    async (userId: string) => {
+      try {
+        const [friendships, requests, acceptedFriends, feed] = await Promise.all([
+          fetchFriendshipsForUser(userId),
+          fetchIncomingRequests(userId),
+          fetchFriends(userId),
+          fetchFriendFeed(userId)
+        ]);
+        setPendingOutgoingFriendIds(
+          friendships.filter((item) => item.requester_id === userId && item.status === "pending").map((item) => item.addressee_id)
+        );
+        setIncomingRequests(requests);
+        setFriends(acceptedFriends);
+        setFriendFeed(feed);
+      } catch (err) {
+        setPendingOutgoingFriendIds([]);
+        setIncomingRequests([]);
+        setFriends([]);
+        setFriendFeed([]);
+
+        const message = getMessage(err);
+        if (message.toLowerCase().includes("friendships")) {
+          setError("Friends is almost ready. Run the updated Supabase schema to enable friend requests and the friend feed.");
+          return;
+        }
+
+        throw err;
+      }
+    },
+    []
+  );
+
   const syncUserData = useCallback(async (userId: string) => {
     if (!userId) {
       setActiveProfile(null);
@@ -108,19 +141,8 @@ export default function HomePage() {
 
     const profileClimbs = await fetchClimbsForUser(userId);
     setClimbs(profileClimbs);
-    const [friendships, requests, acceptedFriends, feed] = await Promise.all([
-      fetchFriendshipsForUser(userId),
-      fetchIncomingRequests(userId),
-      fetchFriends(userId),
-      fetchFriendFeed(userId)
-    ]);
-    setPendingOutgoingFriendIds(
-      friendships.filter((item) => item.requester_id === userId && item.status === "pending").map((item) => item.addressee_id)
-    );
-    setIncomingRequests(requests);
-    setFriends(acceptedFriends);
-    setFriendFeed(feed);
-  }, []);
+    await hydrateFriendState(userId);
+  }, [hydrateFriendState]);
 
   useEffect(() => {
     if (!hasSupabaseConfig()) {
@@ -147,7 +169,9 @@ export default function HomePage() {
 
     const unsubscribe = subscribeToAuthChanges((user) => {
       setCurrentUserEmail(user?.email ?? "");
-      void syncUserData(user?.id ?? "");
+      void syncUserData(user?.id ?? "").catch((err) => {
+        setError(getMessage(err));
+      });
     });
 
     return unsubscribe;
@@ -535,18 +559,7 @@ export default function HomePage() {
       return;
     }
 
-    const [friendships, requests, acceptedFriends, feed] = await Promise.all([
-      fetchFriendshipsForUser(activeProfileId),
-      fetchIncomingRequests(activeProfileId),
-      fetchFriends(activeProfileId),
-      fetchFriendFeed(activeProfileId)
-    ]);
-    setPendingOutgoingFriendIds(
-      friendships.filter((item) => item.requester_id === activeProfileId && item.status === "pending").map((item) => item.addressee_id)
-    );
-    setIncomingRequests(requests);
-    setFriends(acceptedFriends);
-    setFriendFeed(feed);
+    await hydrateFriendState(activeProfileId);
   }
 
   async function handleSendFriendRequest(targetProfileId: string) {
