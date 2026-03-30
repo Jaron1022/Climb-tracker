@@ -32,7 +32,7 @@ export default function HomePage() {
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signup");
-  const [activeView, setActiveView] = useState<"home" | "account" | "progress">("home");
+  const [activeView, setActiveView] = useState<"home" | "history" | "account" | "progress">("home");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [accountDisplayName, setAccountDisplayName] = useState("");
   const [form, setForm] = useState(DEFAULT_FORM);
@@ -51,6 +51,7 @@ export default function HomePage() {
   const [isComposerOpen, setIsComposerOpen] = useState(false);
   const [showSaveBurst, setShowSaveBurst] = useState(false);
   const [historyGradeFilter, setHistoryGradeFilter] = useState<"All" | ClimbRow["grade"]>("All");
+  const [historyVisibleCount, setHistoryVisibleCount] = useState(20);
   const [progressRange, setProgressRange] = useState<ProgressRange>("ALL");
 
   const syncUserData = useCallback(async (userId: string) => {
@@ -118,6 +119,10 @@ export default function HomePage() {
 
     return () => window.clearTimeout(timeoutId);
   }, [isComposerOpen]);
+
+  useEffect(() => {
+    setHistoryVisibleCount(20);
+  }, [historyGradeFilter]);
 
   async function handleAuthSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -241,11 +246,6 @@ export default function HomePage() {
       setLoading(false);
       setActiveAction("");
     }
-  }
-
-  function selectView(view: "home" | "account" | "progress") {
-    setActiveView(view);
-    setIsMenuOpen(false);
   }
 
   function handlePhotoChange(event: React.ChangeEvent<HTMLInputElement>) {
@@ -393,7 +393,9 @@ export default function HomePage() {
     () => climbs.filter((climb) => historyGradeFilter === "All" || climb.grade === historyGradeFilter),
     [climbs, historyGradeFilter]
   );
-  const recentClimbs = filteredClimbs.slice(0, 12);
+  const recentClimbs = filteredClimbs.slice(0, 8);
+  const visibleHistoryClimbs = filteredClimbs.slice(0, historyVisibleCount);
+  const hasMoreHistory = filteredClimbs.length > historyVisibleCount;
   const canSaveClimb = Boolean(activeProfileId) && !loading && !booting;
   const selectedGradeCounts = progressRange === "ALL" ? stats.completedByGrade : progressStats.completedByGrade;
   const selectedGradeMax = useMemo(
@@ -426,6 +428,139 @@ export default function HomePage() {
 
     return { areaPath, linePath, points, yAxisMarks, maxValue, height, topPadding, bottomPadding, chartHeight };
   }, [progressStats.buckets]);
+
+  function selectView(view: "home" | "history" | "account" | "progress") {
+    setActiveView(view);
+    setIsMenuOpen(false);
+  }
+
+  function renderHistorySection({
+    eyebrow,
+    title,
+    climbsToShow,
+    countLabel,
+    showViewAll = false,
+    showLoadMore = false
+  }: {
+    eyebrow: string;
+    title: string;
+    climbsToShow: ClimbRow[];
+    countLabel: string;
+    showViewAll?: boolean;
+    showLoadMore?: boolean;
+  }) {
+    return (
+      <section className="panel history-panel">
+        <div className="section-title-row">
+          <div>
+            <p className="eyebrow">{eyebrow}</p>
+            <h2>{title}</h2>
+          </div>
+          <span className="badge">{countLabel}</span>
+        </div>
+
+        <div className="history-toolbar">
+          <div className="history-filter-header">
+            <button
+              className={clsx("filter-chip filter-chip-all", historyGradeFilter === "All" && "active")}
+              onClick={() => setHistoryGradeFilter("All")}
+              type="button"
+            >
+              All
+            </button>
+          </div>
+          <div className="history-filter-row">
+            {CLIMB_GRADES.map((grade) => (
+              <button
+                className={clsx("filter-chip", historyGradeFilter === grade && "active")}
+                key={grade}
+                onClick={() => setHistoryGradeFilter(grade)}
+                type="button"
+              >
+                {grade}
+              </button>
+            ))}
+          </div>
+          <p className="muted history-summary">
+            {historyGradeFilter === "All"
+              ? `Showing everything you have logged so far.`
+              : `Showing your ${historyGradeFilter} climbs so you can quickly see repeats and notes.`}
+          </p>
+        </div>
+
+        {booting ? <p className="muted">Loading climbs...</p> : null}
+
+        <div className="feed history-feed">
+          {climbsToShow.length === 0 ? (
+            <p className="empty-copy">
+              {historyGradeFilter === "All"
+                ? "No climbs yet. Tap Add climb to log your first send."
+                : `No ${historyGradeFilter} climbs yet. Pick another filter or add one.`}
+            </p>
+          ) : (
+            climbsToShow.map((climb) => (
+              <article className="climb-card" key={climb.id}>
+                {climb.photo_url ? (
+                  <button className="thumbnail-button" onClick={() => setSelectedPhotoUrl(climb.photo_url)} type="button">
+                    <img alt={`${climb.grade} climb`} className="climb-photo" src={climb.photo_url} />
+                  </button>
+                ) : null}
+                <div className="climb-content">
+                  <div className="section-title-row">
+                    <div>
+                      <div className="history-title-row">
+                        <h3>
+                          {climb.grade}
+                          {climb.grade_modifier ?? ""}
+                        </h3>
+                        {climb.wall_name ? <span className="history-description">{climb.wall_name}</span> : null}
+                      </div>
+                      <p className="muted history-meta">{prettyDate(climb.climbed_on)}</p>
+                    </div>
+                  </div>
+                  <div className="tag-row">
+                    {climb.flashed ? <span className="mini-badge ready">flash</span> : null}
+                    {climb.style_tags.map((tag) => (
+                      <span className="mini-badge" key={tag}>
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                  {climb.notes ? <p>{climb.notes}</p> : null}
+                  <div className="climb-actions">
+                    <p className="xp-line">+{climbToXp(climb.grade, Boolean(climb.flashed), climb.grade_modifier ?? null)} XP</p>
+                    <div className="climb-action-buttons">
+                      <button className="secondary-button climb-edit-button" disabled={loading} onClick={() => openEditor(climb)} type="button">
+                        Edit climb
+                      </button>
+                      <button className="delete-button" disabled={loading} onClick={() => setClimbPendingDelete(climb)} type="button">
+                        Delete climb
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            ))
+          )}
+        </div>
+
+        {showViewAll || showLoadMore ? (
+          <div className="history-footer">
+            {showViewAll ? (
+              <button className="secondary-button" onClick={() => selectView("history")} type="button">
+                View all history
+              </button>
+            ) : null}
+            {showLoadMore && hasMoreHistory ? (
+              <button className="secondary-button" onClick={() => setHistoryVisibleCount((current) => current + 20)} type="button">
+                Load 20 more
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+      </section>
+    );
+  }
 
   return (
     <main className="shell shell-dashboard">
@@ -747,7 +882,7 @@ export default function HomePage() {
             <div>
               <p className="eyebrow">Climb Tracker</p>
               <h2 className="app-header-title">
-                {activeView === "home" ? "Dashboard" : activeView === "account" ? "Account" : "Progress"}
+                {activeView === "home" ? "Dashboard" : activeView === "history" ? "History" : activeView === "account" ? "Account" : "Progress"}
               </h2>
             </div>
           </header>
@@ -757,6 +892,9 @@ export default function HomePage() {
               <nav className="menu-panel" onClick={(event) => event.stopPropagation()}>
                 <button className={clsx("menu-link", activeView === "home" && "active")} onClick={() => selectView("home")} type="button">
                   Dashboard
+                </button>
+                <button className={clsx("menu-link", activeView === "history" && "active")} onClick={() => selectView("history")} type="button">
+                  History
                 </button>
                 <button className={clsx("menu-link", activeView === "progress" && "active")} onClick={() => selectView("progress")} type="button">
                   Progress
@@ -840,100 +978,13 @@ export default function HomePage() {
                   )}
                 </section>
 
-                <section className="panel history-panel">
-                  <div className="section-title-row">
-                    <div>
-                      <p className="eyebrow">History</p>
-                      <h2>Recent climbs</h2>
-                    </div>
-                    <span className="badge">{filteredClimbs.length} shown</span>
-                  </div>
-
-                  <div className="history-toolbar">
-                    <div className="history-filter-header">
-                      <button
-                        className={clsx("filter-chip filter-chip-all", historyGradeFilter === "All" && "active")}
-                        onClick={() => setHistoryGradeFilter("All")}
-                        type="button"
-                      >
-                        All
-                      </button>
-                    </div>
-                    <div className="history-filter-row">
-                      {CLIMB_GRADES.map((grade) => (
-                        <button
-                          className={clsx("filter-chip", historyGradeFilter === grade && "active")}
-                          key={grade}
-                          onClick={() => setHistoryGradeFilter(grade)}
-                          type="button"
-                        >
-                          {grade}
-                        </button>
-                      ))}
-                    </div>
-                    <p className="muted history-summary">
-                      {historyGradeFilter === "All"
-                        ? `Showing everything you have logged so far.`
-                        : `Showing your ${historyGradeFilter} climbs so you can quickly see repeats and notes.`}
-                    </p>
-                  </div>
-
-                  {booting ? <p className="muted">Loading climbs...</p> : null}
-
-                  <div className="feed history-feed">
-                    {recentClimbs.length === 0 ? (
-                      <p className="empty-copy">
-                        {historyGradeFilter === "All"
-                          ? "No climbs yet. Tap Add climb to log your first send."
-                          : `No ${historyGradeFilter} climbs yet. Pick another filter or add one.`}
-                      </p>
-                    ) : (
-                      recentClimbs.map((climb) => (
-                        <article className="climb-card" key={climb.id}>
-                          {climb.photo_url ? (
-                            <button className="thumbnail-button" onClick={() => setSelectedPhotoUrl(climb.photo_url)} type="button">
-                              <img alt={`${climb.grade} climb`} className="climb-photo" src={climb.photo_url} />
-                            </button>
-                          ) : null}
-                          <div className="climb-content">
-                            <div className="section-title-row">
-                              <div>
-                                <div className="history-title-row">
-                                  <h3>
-                                    {climb.grade}
-                                    {climb.grade_modifier ?? ""}
-                                  </h3>
-                                  {climb.wall_name ? <span className="history-description">{climb.wall_name}</span> : null}
-                                </div>
-                                <p className="muted history-meta">{prettyDate(climb.climbed_on)}</p>
-                              </div>
-                            </div>
-                            <div className="tag-row">
-                              {climb.flashed ? <span className="mini-badge ready">flash</span> : null}
-                              {climb.style_tags.map((tag) => (
-                                <span className="mini-badge" key={tag}>
-                                  {tag}
-                                </span>
-                              ))}
-                            </div>
-                            {climb.notes ? <p>{climb.notes}</p> : null}
-                            <div className="climb-actions">
-                              <p className="xp-line">+{climbToXp(climb.grade, Boolean(climb.flashed), climb.grade_modifier ?? null)} XP</p>
-                              <div className="climb-action-buttons">
-                                <button className="secondary-button climb-edit-button" disabled={loading} onClick={() => openEditor(climb)} type="button">
-                                  Edit climb
-                                </button>
-                                <button className="delete-button" disabled={loading} onClick={() => setClimbPendingDelete(climb)} type="button">
-                                  Delete climb
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        </article>
-                      ))
-                    )}
-                  </div>
-                </section>
+                {renderHistorySection({
+                  eyebrow: "History",
+                  title: "Recent climbs",
+                  climbsToShow: recentClimbs,
+                  countLabel: `${recentClimbs.length} of ${filteredClimbs.length}`,
+                  showViewAll: filteredClimbs.length > recentClimbs.length
+                })}
               </section>
 
               <button className="fab-button" onClick={openComposer} type="button">
@@ -1007,6 +1058,18 @@ export default function HomePage() {
                 </div>
                 <p className="muted">Deleting your account removes your profile, climbs, and sign-in from this app.</p>
               </section>
+            </section>
+          ) : null}
+
+          {activeView === "history" ? (
+            <section className="history-view">
+              {renderHistorySection({
+                eyebrow: "History",
+                title: "All climbs",
+                climbsToShow: visibleHistoryClimbs,
+                countLabel: `${visibleHistoryClimbs.length} of ${filteredClimbs.length}`,
+                showLoadMore: true
+              })}
             </section>
           ) : null}
 
