@@ -31,17 +31,10 @@ export const STYLE_TAGS = [
   "technical",
   "balancey",
   "compression",
-  "powerful",
-  "purple",
-  "black",
-  "white",
-  "yellow",
-  "red",
-  "blue",
-  "green",
-  "pink",
-  "orange"
+  "powerful"
 ] as const;
+
+export const CLIMB_COLORS = ["purple", "black", "white", "yellow", "red", "blue", "green", "pink", "orange"] as const;
 
 export const STYLE_TAG_GROUPS = [
   {
@@ -55,10 +48,6 @@ export const STYLE_TAG_GROUPS = [
   {
     label: "Movement",
     tags: ["static", "dynamic", "technical", "balancey", "compression", "powerful"] as const
-  },
-  {
-    label: "Color",
-    tags: ["purple", "black", "white", "yellow", "red", "blue", "green", "pink", "orange"] as const
   }
 ] as const;
 
@@ -67,7 +56,7 @@ export const DEFAULT_FORM: ClimbForm = {
   flashed: false,
   gradeModifier: null,
   styleTags: [] as StyleTag[],
-  description: "",
+  color: "",
   notes: "",
   date: new Date().toISOString().slice(0, 10)
 };

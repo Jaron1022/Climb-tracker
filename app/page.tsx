@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
-import { CLIMB_GRADES, DEFAULT_FORM, STYLE_TAG_GROUPS, climbToXp } from "@/lib/xp";
+import { CLIMB_COLORS, CLIMB_GRADES, DEFAULT_FORM, STYLE_TAG_GROUPS, climbToXp } from "@/lib/xp";
 import { uploadPhoto } from "@/lib/local-store";
 import { hasSupabaseConfig } from "@/lib/supabase/client";
 import {
@@ -295,7 +295,7 @@ export default function HomePage() {
         flashed: form.flashed,
         grade_modifier: form.gradeModifier,
         style_tags: form.styleTags,
-        wall_name: form.description.trim() || null,
+        wall_name: form.color.trim() || null,
         notes: form.notes.trim() || null,
         status: "completed",
         climbed_on: form.date
@@ -371,7 +371,7 @@ export default function HomePage() {
       flashed: Boolean(climb.flashed),
       gradeModifier: climb.grade_modifier ?? null,
       styleTags: climb.style_tags,
-      description: climb.wall_name ?? "",
+      color: climb.wall_name ?? "",
       notes: climb.notes ?? "",
       date: climb.climbed_on
     });
@@ -400,6 +400,7 @@ export default function HomePage() {
         const matchesTag =
           normalizedQuery.length === 0 ||
           climb.style_tags.some((tag) => tag.toLowerCase().includes(normalizedQuery)) ||
+          climb.wall_name?.toLowerCase().includes(normalizedQuery) ||
           (normalizedQuery === "flash" && Boolean(climb.flashed));
 
         return matchesGrade && matchesTag;
@@ -513,7 +514,7 @@ export default function HomePage() {
           <label className="field history-search-field">
             <span>Search tags</span>
             <input
-              placeholder="Try slab, flash, blue..."
+              placeholder="Try slab, flash, dynamic..."
               type="search"
               value={historyTagQuery}
               onChange={(event) => setHistoryTagQuery(event.target.value)}
@@ -550,7 +551,16 @@ export default function HomePage() {
                           {climb.grade}
                           {climb.grade_modifier ?? ""}
                         </h3>
-                        {climb.wall_name ? <span className="history-description">{climb.wall_name}</span> : null}
+                        {climb.wall_name ? (
+                          <span
+                            className={clsx(
+                              "history-description",
+                              getColorChipClass(climb.wall_name)
+                            )}
+                          >
+                            {climb.wall_name}
+                          </span>
+                        ) : null}
                       </div>
                       <p className="muted history-meta">{prettyDate(climb.climbed_on)}</p>
                     </div>
@@ -677,7 +687,7 @@ export default function HomePage() {
             </div>
 
             <p className="muted helper-copy">
-              {editingClimb ? "Update anything you want to keep track of. Retake the photo only if you want to replace it." : "Save the essentials first. Description and notes are just memory helpers."}
+              {editingClimb ? "Update anything you want to keep track of. Retake the photo only if you want to replace it." : "Save the essentials first. Color and notes are just memory helpers."}
             </p>
 
             <form className="stack-sm" onSubmit={handleClimbSubmit}>
@@ -765,13 +775,15 @@ export default function HomePage() {
               </label>
 
               <label className="field">
-                <span>Description</span>
-                <input
-                  type="text"
-                  placeholder="North Cave, purple holds, slab corner..."
-                  value={form.description}
-                  onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
-                />
+                <span>Color</span>
+                <select value={form.color} onChange={(event) => setForm((current) => ({ ...current, color: event.target.value }))}>
+                  <option value="">No color</option>
+                  {CLIMB_COLORS.map((color) => (
+                    <option key={color} value={color}>
+                      {color}
+                    </option>
+                  ))}
+                </select>
               </label>
 
               <label className="field field-compact">
@@ -811,22 +823,6 @@ export default function HomePage() {
                         })}
                       </div>
                     );
-
-                    if (group.label === "Color") {
-                      return (
-                        <details className="tag-group tag-group-dropdown" key={group.label}>
-                          <summary className="tag-group-dropdown-summary">
-                            <span className="tag-group-label">{group.label}</span>
-                            <span className="tag-dropdown-meta">
-                              {group.tags.filter((tag) => form.styleTags.includes(tag)).length > 0
-                                ? `${group.tags.filter((tag) => form.styleTags.includes(tag)).length} selected`
-                                : "Optional"}
-                            </span>
-                          </summary>
-                          {groupBody}
-                        </details>
-                      );
-                    }
 
                     return (
                       <div className="tag-group" key={group.label}>
@@ -1406,4 +1402,14 @@ function toggleStyleTag(selectedTags: StyleTag[], tag: StyleTag) {
   }
 
   return [...selectedTags, tag];
+}
+
+function getColorChipClass(value: string) {
+  const normalized = value.trim().toLowerCase();
+
+  if (CLIMB_COLORS.includes(normalized as (typeof CLIMB_COLORS)[number])) {
+    return `history-color-chip history-color-${normalized}`;
+  }
+
+  return "";
 }

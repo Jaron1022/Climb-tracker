@@ -45,7 +45,7 @@ export type ClimbForm = {
   flashed: boolean;
   gradeModifier: GradeModifier;
   styleTags: StyleTag[];
-  description: string;
+  color: string;
   notes: string;
   date: string;
 };
