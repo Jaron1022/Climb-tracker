@@ -129,11 +129,12 @@ export function buildProgressStats(climbs: ClimbRow[], range: ProgressRange) {
 }
 
 export function prettyDate(rawDate: string) {
+  const normalized = rawDate.includes("T") ? rawDate : `${rawDate}T12:00:00`;
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric"
-  }).format(new Date(`${rawDate}T12:00:00`));
+  }).format(new Date(normalized));
 }
 
 function filterClimbsByRange(climbs: ClimbRow[], range: ProgressRange) {
