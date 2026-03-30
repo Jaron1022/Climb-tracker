@@ -12,6 +12,8 @@ export type ProfileRow = {
   created_at: string;
 };
 
+export type ProfileSearchRow = Pick<ProfileRow, "id" | "display_name" | "created_at">;
+
 export type ClimbRow = {
   id: string;
   profile_id: string;
@@ -38,6 +40,35 @@ export type ClimbInsert = {
   notes: string | null;
   status: ClimbStatus;
   climbed_on: string;
+};
+
+export type FriendshipStatus = "pending" | "accepted" | "declined";
+
+export type FriendshipRow = {
+  id: string;
+  requester_id: string;
+  addressee_id: string;
+  status: FriendshipStatus;
+  created_at: string;
+  responded_at: string | null;
+};
+
+export type IncomingFriendRequest = {
+  friendshipId: string;
+  requesterId: string;
+  requesterName: string;
+  createdAt: string;
+};
+
+export type FriendSummary = {
+  friendshipId: string;
+  friendId: string;
+  friendName: string;
+  createdAt: string;
+};
+
+export type FriendFeedClimb = ClimbRow & {
+  friend_name: string;
 };
 
 export type ClimbForm = {

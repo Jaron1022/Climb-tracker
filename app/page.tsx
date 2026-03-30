@@ -4,6 +4,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
 import { CLIMB_COLORS, CLIMB_GRADES, DEFAULT_FORM, STYLE_TAG_GROUPS, climbToXp } from "@/lib/xp";
 import { uploadPhoto } from "@/lib/local-store";
+import {
+  fetchFriendshipsForUser,
+  fetchFriendFeed,
+  fetchFriends,
+  fetchIncomingRequests,
+  removeFriendship,
+  respondToFriendRequest,
+  searchProfiles,
+  sendFriendRequest
+} from "@/lib/friends-store";
 import { hasSupabaseConfig } from "@/lib/supabase/client";
 import {
   deleteClimbForUser,
@@ -20,7 +30,16 @@ import {
   updateDisplayName,
   updateClimbForUser
 } from "@/lib/supabase-store";
-import type { ClimbInsert, ClimbRow, ProfileRow, StyleTag } from "@/lib/types";
+import type {
+  ClimbInsert,
+  ClimbRow,
+  FriendFeedClimb,
+  FriendSummary,
+  IncomingFriendRequest,
+  ProfileRow,
+  ProfileSearchRow,
+  StyleTag
+} from "@/lib/types";
 import { buildProgressStats, buildStats, prettyDate, PROGRESS_RANGES, type ProgressRange } from "@/lib/stats";
 
 export default function HomePage() {
@@ -32,7 +51,7 @@ export default function HomePage() {
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signup");
-  const [activeView, setActiveView] = useState<"home" | "history" | "account" | "progress">("home");
+  const [activeView, setActiveView] = useState<"home" | "history" | "friends" | "account" | "progress">("home");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [accountDisplayName, setAccountDisplayName] = useState("");
   const [form, setForm] = useState(DEFAULT_FORM);
@@ -54,6 +73,12 @@ export default function HomePage() {
   const [historyGradeFilter, setHistoryGradeFilter] = useState<"All" | ClimbRow["grade"]>("All");
   const [historyTagQuery, setHistoryTagQuery] = useState("");
   const [historyVisibleCount, setHistoryVisibleCount] = useState(20);
+  const [friendSearch, setFriendSearch] = useState("");
+  const [friendResults, setFriendResults] = useState<ProfileSearchRow[]>([]);
+  const [incomingRequests, setIncomingRequests] = useState<IncomingFriendRequest[]>([]);
+  const [friends, setFriends] = useState<FriendSummary[]>([]);
+  const [friendFeed, setFriendFeed] = useState<FriendFeedClimb[]>([]);
+  const [pendingOutgoingFriendIds, setPendingOutgoingFriendIds] = useState<string[]>([]);
   const [progressRange, setProgressRange] = useState<ProgressRange>("ALL");
 
   const syncUserData = useCallback(async (userId: string) => {
@@ -63,6 +88,12 @@ export default function HomePage() {
       setCurrentUserEmail("");
       setAccountDisplayName("");
       setClimbs([]);
+      setFriendSearch("");
+      setFriendResults([]);
+      setIncomingRequests([]);
+      setFriends([]);
+      setFriendFeed([]);
+      setPendingOutgoingFriendIds([]);
       setEditingClimb(null);
       setIsComposerOpen(false);
       setActiveView("home");
@@ -77,6 +108,18 @@ export default function HomePage() {
 
     const profileClimbs = await fetchClimbsForUser(userId);
     setClimbs(profileClimbs);
+    const [friendships, requests, acceptedFriends, feed] = await Promise.all([
+      fetchFriendshipsForUser(userId),
+      fetchIncomingRequests(userId),
+      fetchFriends(userId),
+      fetchFriendFeed(userId)
+    ]);
+    setPendingOutgoingFriendIds(
+      friendships.filter((item) => item.requester_id === userId && item.status === "pending").map((item) => item.addressee_id)
+    );
+    setIncomingRequests(requests);
+    setFriends(acceptedFriends);
+    setFriendFeed(feed);
   }, []);
 
   useEffect(() => {
@@ -125,6 +168,31 @@ export default function HomePage() {
   useEffect(() => {
     setHistoryVisibleCount(20);
   }, [historyGradeFilter, historyTagQuery]);
+
+  useEffect(() => {
+    if (!activeProfileId || activeView !== "friends") {
+      return;
+    }
+
+    const trimmed = friendSearch.trim();
+    if (!trimmed) {
+      setFriendResults([]);
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      void (async () => {
+        try {
+          const results = await searchProfiles(trimmed, activeProfileId);
+          setFriendResults(results);
+        } catch (err) {
+          setError(getMessage(err));
+        }
+      })();
+    }, 220);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [activeProfileId, activeView, friendSearch]);
 
   async function handleAuthSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -444,7 +512,7 @@ export default function HomePage() {
     return { areaPath, linePath, points, yAxisMarks, maxValue, height, topPadding, bottomPadding, chartHeight };
   }, [progressStats.buckets]);
 
-  function selectView(view: "home" | "history" | "account" | "progress") {
+  function selectView(view: "home" | "history" | "friends" | "account" | "progress") {
     setActiveView(view);
     setIsMenuOpen(false);
   }
@@ -460,6 +528,74 @@ export default function HomePage() {
   function clearHistoryFilters() {
     setHistoryGradeFilter("All");
     setHistoryTagQuery("");
+  }
+
+  async function refreshFriendsView() {
+    if (!activeProfileId) {
+      return;
+    }
+
+    const [friendships, requests, acceptedFriends, feed] = await Promise.all([
+      fetchFriendshipsForUser(activeProfileId),
+      fetchIncomingRequests(activeProfileId),
+      fetchFriends(activeProfileId),
+      fetchFriendFeed(activeProfileId)
+    ]);
+    setPendingOutgoingFriendIds(
+      friendships.filter((item) => item.requester_id === activeProfileId && item.status === "pending").map((item) => item.addressee_id)
+    );
+    setIncomingRequests(requests);
+    setFriends(acceptedFriends);
+    setFriendFeed(feed);
+  }
+
+  async function handleSendFriendRequest(targetProfileId: string) {
+    if (!activeProfileId) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError("");
+      setSuccess("");
+      await sendFriendRequest(activeProfileId, targetProfileId);
+      await refreshFriendsView();
+      setSuccess("Friend request sent.");
+    } catch (err) {
+      setError(getMessage(err));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleFriendRequestResponse(friendshipId: string, status: "accepted" | "declined") {
+    try {
+      setLoading(true);
+      setError("");
+      setSuccess("");
+      await respondToFriendRequest(friendshipId, status);
+      await refreshFriendsView();
+      setSuccess(status === "accepted" ? "Friend request accepted." : "Friend request declined.");
+    } catch (err) {
+      setError(getMessage(err));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleRemoveFriend(friendshipId: string) {
+    try {
+      setLoading(true);
+      setError("");
+      setSuccess("");
+      await removeFriendship(friendshipId);
+      await refreshFriendsView();
+      setSuccess("Friend removed.");
+    } catch (err) {
+      setError(getMessage(err));
+    } finally {
+      setLoading(false);
+    }
   }
 
   function renderHistorySection({
@@ -947,7 +1083,15 @@ export default function HomePage() {
             <div>
               <p className="eyebrow">Climb Tracker</p>
               <h2 className="app-header-title">
-                {activeView === "home" ? "Dashboard" : activeView === "history" ? "History" : activeView === "account" ? "Account" : "Progress"}
+                {activeView === "home"
+                  ? "Dashboard"
+                  : activeView === "history"
+                    ? "History"
+                    : activeView === "friends"
+                      ? "Friends"
+                      : activeView === "account"
+                        ? "Account"
+                        : "Progress"}
               </h2>
             </div>
           </header>
@@ -960,6 +1104,9 @@ export default function HomePage() {
                 </button>
                 <button className={clsx("menu-link", activeView === "history" && "active")} onClick={() => selectView("history")} type="button">
                   History
+                </button>
+                <button className={clsx("menu-link", activeView === "friends" && "active")} onClick={() => selectView("friends")} type="button">
+                  Friends
                 </button>
                 <button className={clsx("menu-link", activeView === "progress" && "active")} onClick={() => selectView("progress")} type="button">
                   Progress
@@ -1135,6 +1282,182 @@ export default function HomePage() {
                 countLabel: `${visibleHistoryClimbs.length} of ${filteredClimbs.length}`,
                 showLoadMore: true
               })}
+            </section>
+          ) : null}
+
+          {activeView === "friends" ? (
+            <section className="friends-grid">
+              <section className="panel">
+                <div className="section-title-row">
+                  <div>
+                    <p className="eyebrow">Find climbers</p>
+                    <h2>Add a friend</h2>
+                  </div>
+                </div>
+                <label className="field">
+                  <span>Search by climber name</span>
+                  <input
+                    type="search"
+                    placeholder="Search display names..."
+                    value={friendSearch}
+                    onChange={(event) => setFriendSearch(event.target.value)}
+                  />
+                </label>
+                <div className="friends-search-results">
+                  {friendSearch.trim().length === 0 ? (
+                    <p className="empty-copy">Search for a climber by display name to send a friend request.</p>
+                  ) : friendResults.length === 0 ? (
+                    <p className="empty-copy">No climbers matched that search yet.</p>
+                  ) : (
+                    friendResults.map((result) => {
+                      const alreadyFriends = friends.some((friend) => friend.friendId === result.id);
+                      const alreadyIncoming = incomingRequests.some((request) => request.requesterId === result.id);
+                      const alreadyPending = pendingOutgoingFriendIds.includes(result.id);
+
+                      return (
+                        <article className="friend-row" key={result.id}>
+                          <div>
+                            <strong>{result.display_name}</strong>
+                            <p className="muted friend-row-meta">Joined {prettyDate(result.created_at)}</p>
+                          </div>
+                          <button
+                            className="secondary-button"
+                            disabled={loading || alreadyFriends || alreadyIncoming || alreadyPending}
+                            onClick={() => void handleSendFriendRequest(result.id)}
+                            type="button"
+                          >
+                            {alreadyFriends ? "Friends" : alreadyIncoming ? "Requested you" : alreadyPending ? "Pending" : "Add friend"}
+                          </button>
+                        </article>
+                      );
+                    })
+                  )}
+                </div>
+              </section>
+
+              <section className="panel">
+                <div className="section-title-row">
+                  <div>
+                    <p className="eyebrow">Requests</p>
+                    <h2>Incoming</h2>
+                  </div>
+                  <span className="badge">{incomingRequests.length}</span>
+                </div>
+                {incomingRequests.length === 0 ? (
+                  <p className="empty-copy">No incoming requests right now.</p>
+                ) : (
+                  <div className="friends-list">
+                    {incomingRequests.map((request) => (
+                      <article className="friend-row" key={request.friendshipId}>
+                        <div>
+                          <strong>{request.requesterName}</strong>
+                          <p className="muted friend-row-meta">Requested {prettyDate(request.createdAt)}</p>
+                        </div>
+                        <div className="friend-row-actions">
+                          <button
+                            className="primary-button friend-action-button"
+                            disabled={loading}
+                            onClick={() => void handleFriendRequestResponse(request.friendshipId, "accepted")}
+                            type="button"
+                          >
+                            Accept
+                          </button>
+                          <button
+                            className="secondary-button friend-action-button"
+                            disabled={loading}
+                            onClick={() => void handleFriendRequestResponse(request.friendshipId, "declined")}
+                            type="button"
+                          >
+                            Decline
+                          </button>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </section>
+
+              <section className="panel">
+                <div className="section-title-row">
+                  <div>
+                    <p className="eyebrow">Friends</p>
+                    <h2>Your circle</h2>
+                  </div>
+                  <span className="badge">{friends.length}</span>
+                </div>
+                {friends.length === 0 ? (
+                  <p className="empty-copy">Once requests are accepted, your friends will show up here.</p>
+                ) : (
+                  <div className="friends-list">
+                    {friends.map((friend) => (
+                      <article className="friend-row" key={friend.friendshipId}>
+                        <div>
+                          <strong>{friend.friendName}</strong>
+                          <p className="muted friend-row-meta">Connected {prettyDate(friend.createdAt)}</p>
+                        </div>
+                        <button
+                          className="delete-button"
+                          disabled={loading}
+                          onClick={() => void handleRemoveFriend(friend.friendshipId)}
+                          type="button"
+                        >
+                          Remove
+                        </button>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </section>
+
+              <section className="panel">
+                <div className="section-title-row">
+                  <div>
+                    <p className="eyebrow">Feed</p>
+                    <h2>Recent friend climbs</h2>
+                  </div>
+                </div>
+                {friendFeed.length === 0 ? (
+                  <p className="empty-copy">Accepted friends will start showing up here once they log climbs.</p>
+                ) : (
+                  <div className="feed friend-feed">
+                    {friendFeed.map((climb) => (
+                      <article className="climb-card" key={climb.id}>
+                        {climb.photo_url ? (
+                          <button className="thumbnail-button" onClick={() => setSelectedPhotoUrl(climb.photo_url)} type="button">
+                            <img alt={`${climb.grade} climb by ${climb.friend_name}`} className="climb-photo" src={climb.photo_url} />
+                          </button>
+                        ) : null}
+                        <div className="climb-content">
+                          <div className="section-title-row">
+                            <div>
+                              <p className="eyebrow">{climb.friend_name}</p>
+                              <div className="history-title-row">
+                                <h3>
+                                  {climb.grade}
+                                  {climb.grade_modifier ?? ""}
+                                </h3>
+                                {climb.wall_name ? (
+                                  <span className={clsx("history-description", getColorChipClass(climb.wall_name))}>{climb.wall_name}</span>
+                                ) : null}
+                              </div>
+                              <p className="muted history-meta">{prettyDate(climb.climbed_on)}</p>
+                            </div>
+                          </div>
+                          <div className="tag-row">
+                            {climb.flashed ? <span className="mini-badge ready">flash</span> : null}
+                            {climb.style_tags.map((tag) => (
+                              <span className="mini-badge" key={tag}>
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                          {climb.notes ? <p>{climb.notes}</p> : null}
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </section>
             </section>
           ) : null}
 

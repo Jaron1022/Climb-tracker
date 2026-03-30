@@ -307,6 +307,51 @@ button {
   gap: 1rem;
 }
 
+.friends-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.friends-list,
+.friends-search-results {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.friend-feed {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.friend-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.friend-row:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.friend-row-meta {
+  margin: 0.22rem 0 0;
+}
+
+.friend-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.55rem;
+}
+
+.friend-action-button {
+  padding-inline: 0.9rem;
+}
+
 .history-footer {
   display: flex;
   flex-wrap: wrap;
@@ -1511,6 +1556,11 @@ button {
   }
 
   .history-feed {
+    grid-template-columns: 1fr;
+  }
+
+  .friends-grid,
+  .friend-feed {
     grid-template-columns: 1fr;
   }
 
