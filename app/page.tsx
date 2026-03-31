@@ -205,7 +205,7 @@ export default function HomePage() {
     }
 
     if (!friends.some((friend) => friend.friendId === selectedFriendId)) {
-      setSelectedFriendId(friends[0].friendId);
+      setSelectedFriendId("");
     }
   }, [friends, selectedFriendId]);
 
@@ -555,10 +555,6 @@ export default function HomePage() {
   const visibleHistoryClimbs = filteredClimbs.slice(0, historyVisibleCount);
   const hasMoreHistory = filteredClimbs.length > historyVisibleCount;
   const canSaveClimb = Boolean(activeProfileId) && !loading && !booting;
-  const selectedFriend = useMemo(
-    () => friends.find((friend) => friend.friendId === selectedFriendId) ?? friends[0] ?? null,
-    [friends, selectedFriendId]
-  );
   const selectedGradeCounts = progressRange === "ALL" ? stats.completedByGrade : progressStats.completedByGrade;
   const selectedGradeMax = useMemo(
     () => Math.max(1, ...CLIMB_GRADES.map((grade) => selectedGradeCounts[grade] ?? 0)),
@@ -1511,34 +1507,6 @@ export default function HomePage() {
                 {friendsTab === "circle" ? (
                   <div className="friends-tab-panel friends-circle-layout">
                     <section className="friends-circle-panel">
-                      {selectedFriend ? (
-                        <article className="friend-spotlight">
-                          <div className="section-title-row friend-spotlight-header">
-                            <div>
-                              <p className="eyebrow">Circle spotlight</p>
-                              <h3>{selectedFriend.friendName}</h3>
-                            </div>
-                            <span className="friend-level-badge friend-spotlight-level">Lv {selectedFriend.level}</span>
-                          </div>
-                          <div className="friend-spotlight-main">
-                            {renderProfileAvatar(selectedFriend.friendName, selectedFriend.avatarUrl, "account-avatar friend-spotlight-avatar")}
-                            <div className="friend-spotlight-copy">
-                              <p className="muted">Connected {prettyDate(selectedFriend.createdAt)}</p>
-                              <div className="friend-spotlight-stats">
-                                <div className="friend-spotlight-stat">
-                                  <span>Total sends</span>
-                                  <strong>{selectedFriend.totalSends}</strong>
-                                </div>
-                                <div className="friend-spotlight-stat">
-                                  <span>Personal best</span>
-                                  <strong>{selectedFriend.personalBest}</strong>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </article>
-                      ) : null}
-
                       <div className="section-title-row">
                         <div>
                           <p className="eyebrow">Friends</p>
@@ -1551,10 +1519,12 @@ export default function HomePage() {
                         <div className="friends-list">
                           {friends.map((friend) => (
                             <article className={clsx("friend-row", selectedFriendId === friend.friendId && "selected")} key={friend.friendshipId}>
-                              <div className="friend-row-main">
+                              <div className="friend-row-stack">
                                 <button
                                   className="friend-select-button"
-                                  onClick={() => setSelectedFriendId(friend.friendId)}
+                                  onClick={() =>
+                                    setSelectedFriendId((current) => (current === friend.friendId ? "" : friend.friendId))
+                                  }
                                   type="button"
                                 >
                                   {renderProfileAvatar(friend.friendName, friend.avatarUrl, "friend-avatar")}
@@ -1566,6 +1536,18 @@ export default function HomePage() {
                                     <p className="muted friend-row-meta">Connected {prettyDate(friend.createdAt)}</p>
                                   </div>
                                 </button>
+                                {selectedFriendId === friend.friendId ? (
+                                  <div className="friend-inline-details">
+                                    <div className="friend-inline-stat">
+                                      <span>Total sends</span>
+                                      <strong>{friend.totalSends}</strong>
+                                    </div>
+                                    <div className="friend-inline-stat">
+                                      <span>Personal best</span>
+                                      <strong>{friend.personalBest}</strong>
+                                    </div>
+                                  </div>
+                                ) : null}
                               </div>
                               <button
                                 className="delete-button"
