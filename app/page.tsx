@@ -80,6 +80,7 @@ export default function HomePage() {
   const [incomingRequests, setIncomingRequests] = useState<IncomingFriendRequest[]>([]);
   const [friends, setFriends] = useState<FriendSummary[]>([]);
   const [friendFeed, setFriendFeed] = useState<FriendFeedClimb[]>([]);
+  const [friendFeedVisibleCount, setFriendFeedVisibleCount] = useState(20);
   const [pendingOutgoingFriendIds, setPendingOutgoingFriendIds] = useState<string[]>([]);
   const [friendsTab, setFriendsTab] = useState<"discover" | "requests" | "circle">("circle");
   const [progressRange, setProgressRange] = useState<ProgressRange>("ALL");
@@ -195,6 +196,10 @@ export default function HomePage() {
   useEffect(() => {
     setHistoryVisibleCount(20);
   }, [historyGradeFilter, historyTagQuery]);
+
+  useEffect(() => {
+    setFriendFeedVisibleCount(20);
+  }, [friendFeed]);
 
   useEffect(() => {
     if (!success) {
@@ -579,9 +584,10 @@ export default function HomePage() {
     },
     [climbs, historyGradeFilter, historyTagQuery]
   );
-  const recentClimbs = filteredClimbs.slice(0, 8);
   const visibleHistoryClimbs = filteredClimbs.slice(0, historyVisibleCount);
   const hasMoreHistory = filteredClimbs.length > historyVisibleCount;
+  const visibleFriendFeed = friendFeed.slice(0, friendFeedVisibleCount);
+  const hasMoreFriendFeed = friendFeed.length > friendFeedVisibleCount;
   const canSaveClimb = Boolean(activeProfileId) && !loading && !booting;
   const selectedGradeCounts = progressRange === "ALL" ? stats.completedByGrade : progressStats.completedByGrade;
   const selectedGradeMax = useMemo(
@@ -617,6 +623,11 @@ export default function HomePage() {
 
   function selectView(view: "home" | "history" | "friends" | "account" | "progress") {
     setActiveView(view);
+    if (typeof window !== "undefined") {
+      window.requestAnimationFrame(() => {
+        window.scrollTo({ top: 0, behavior: "auto" });
+      });
+    }
   }
 
   function openHistoryView() {
@@ -1257,14 +1268,6 @@ export default function HomePage() {
                     <p className="empty-copy">Log a climb and your most recent session recap will show up here.</p>
                   )}
                 </section>
-
-                {renderHistorySection({
-                  eyebrow: "History",
-                  title: "Recent climbs",
-                  climbsToShow: recentClimbs,
-                  countLabel: `${recentClimbs.length} of ${filteredClimbs.length}`,
-                  showViewAll: filteredClimbs.length > recentClimbs.length
-                })}
               </section>
 
               <button className="fab-button" onClick={openComposer} type="button">
@@ -1560,11 +1563,12 @@ export default function HomePage() {
                       {friendFeed.length === 0 ? (
                         <p className="empty-copy">Accepted friends will start showing up here once they log climbs.</p>
                       ) : (
-                        <div className="feed friend-feed">
-                          {friendFeed.map((climb) => (
-                            <article className="climb-card" key={climb.id}>
-                              {climb.photo_url ? (
-                                <button className="thumbnail-button" onClick={() => setSelectedPhotoUrl(climb.photo_url)} type="button">
+                        <>
+                          <div className="feed friend-feed">
+                            {visibleFriendFeed.map((climb) => (
+                              <article className="climb-card" key={climb.id}>
+                                {climb.photo_url ? (
+                                  <button className="thumbnail-button" onClick={() => setSelectedPhotoUrl(climb.photo_url)} type="button">
                                   <img alt={`${climb.grade} climb by ${climb.friend_name}`} className="climb-photo" src={climb.photo_url} />
                                 </button>
                               ) : null}
@@ -1594,9 +1598,17 @@ export default function HomePage() {
                                 </div>
                                 {climb.notes ? <p>{climb.notes}</p> : null}
                               </div>
-                            </article>
-                          ))}
-                        </div>
+                              </article>
+                            ))}
+                          </div>
+                          {hasMoreFriendFeed ? (
+                            <div className="history-footer">
+                              <button className="secondary-button" onClick={() => setFriendFeedVisibleCount((current) => current + 20)} type="button">
+                                Load 20 more
+                              </button>
+                            </div>
+                          ) : null}
+                        </>
                       )}
                     </section>
                   </div>

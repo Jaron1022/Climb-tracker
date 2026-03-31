@@ -164,7 +164,7 @@ button {
 
 .dashboard-grid {
   display: grid;
-  grid-template-columns: minmax(280px, 0.85fr) minmax(0, 1.4fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
 }
 
@@ -214,11 +214,7 @@ button {
   flex-direction: column;
   justify-content: space-between;
   min-height: 190px;
-  background:
-    radial-gradient(circle at top right, color-mix(in srgb, var(--accent-2) 20%, transparent), transparent 35%),
-    radial-gradient(circle at bottom left, color-mix(in srgb, var(--accent) 18%, transparent), transparent 34%),
-    linear-gradient(180deg, var(--surface-control-strong), var(--surface)),
-    var(--surface-strong);
+  background: linear-gradient(180deg, var(--surface-control-strong), var(--surface));
 }
 
 .hero-stat-label,
@@ -619,6 +615,11 @@ button {
 .progress-grid {
   display: grid;
   gap: 0.8rem;
+}
+
+.progress-view,
+.account-grid {
+  padding-bottom: 6.5rem;
 }
 
 .progress-grid {
