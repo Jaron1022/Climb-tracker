@@ -1,6 +1,6 @@
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { buildStats } from "@/lib/stats";
-import { climbToXp, levelFromXp } from "@/lib/xp";
+import { CLIMB_GRADES, climbToXp, levelFromXp } from "@/lib/xp";
 import type {
   ClimbRow,
   FriendFeedClimb,
@@ -148,6 +148,7 @@ export async function fetchFriends(userId: string) {
     .map((item) => {
       const friendId = item.requester_id === userId ? item.addressee_id : item.requester_id;
       const friendClimbs = climbsByFriend.get(friendId) ?? [];
+      const recentClimbs = getRecentClimbs(friendClimbs);
       const friendXp = (climbsByFriend.get(friendId) ?? []).reduce(
         (total, climb) => total + climbToXp(climb.grade, Boolean(climb.flashed), climb.grade_modifier ?? null),
         0
@@ -163,7 +164,15 @@ export async function fetchFriends(userId: string) {
         createdAt: item.responded_at ?? item.created_at,
         level: levelFromXp(friendXp),
         totalSends: friendClimbs.length,
-        personalBest: friendStats.personalBest as Grade
+        personalBest: friendStats.personalBest as Grade,
+        recentSends30: recentClimbs.length,
+        activeDays30: new Set(recentClimbs.map((climb) => climb.climbed_on)).size,
+        leaderboardScore: buildLeaderboardScore(
+          levelFromXp(friendXp),
+          friendStats.personalBest as Grade,
+          recentClimbs.length,
+          new Set(recentClimbs.map((climb) => climb.climbed_on)).size
+        )
       };
     })
     .sort((left, right) => left.friendName.localeCompare(right.friendName));
@@ -195,4 +204,23 @@ export async function fetchFriendFeed(userId: string) {
     ...climb,
     friend_name: nameMap.get(climb.profile_id) ?? "Climber"
   })) as FriendFeedClimb[];
+}
+
+export function buildLeaderboardScore(level: number, personalBest: Grade, recentSends30: number, activeDays30: number) {
+  const gradeIndex = Math.max(0, CLIMB_GRADES.indexOf(personalBest));
+  const cappedRecentSends = Math.min(recentSends30, 12);
+  const cappedActiveDays = Math.min(activeDays30, 8);
+  return level * 100 + gradeIndex * 18 + cappedRecentSends * 6 + cappedActiveDays * 10;
+}
+
+function getRecentClimbs(climbs: ClimbRow[]) {
+  const today = new Date();
+  const threshold = new Date(today);
+  threshold.setHours(0, 0, 0, 0);
+  threshold.setDate(threshold.getDate() - 29);
+
+  return climbs.filter((climb) => {
+    const climbedOn = new Date(`${climb.climbed_on}T00:00:00`);
+    return climbedOn >= threshold;
+  });
 }

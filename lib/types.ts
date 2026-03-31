@@ -70,6 +70,9 @@ export type FriendSummary = {
   level: number;
   totalSends: number;
   personalBest: Grade;
+  recentSends30: number;
+  activeDays30: number;
+  leaderboardScore: number;
 };
 
 export type FriendFeedClimb = ClimbRow & {

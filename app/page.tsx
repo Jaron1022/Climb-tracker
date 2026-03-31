@@ -5,6 +5,7 @@ import clsx from "clsx";
 import { CLIMB_COLORS, CLIMB_GRADES, DEFAULT_FORM, STYLE_TAG_GROUPS, climbToXp } from "@/lib/xp";
 import { uploadPhoto } from "@/lib/local-store";
 import {
+  buildLeaderboardScore,
   fetchFriendshipsForUser,
   fetchFriendFeed,
   fetchFriends,
@@ -38,6 +39,7 @@ import type {
   ClimbRow,
   FriendFeedClimb,
   FriendSummary,
+  Grade,
   IncomingFriendRequest,
   ProfileRow,
   ProfileSearchRow,
@@ -647,6 +649,45 @@ export default function HomePage() {
 
   const stats = useMemo(() => buildStats(climbs), [climbs]);
   const progressStats = useMemo(() => buildProgressStats(climbs, progressRange), [climbs, progressRange]);
+  const leaderboardEntries = useMemo(() => {
+    const recentClimbs = climbs.filter((climb) => {
+      const climbedOn = new Date(`${climb.climbed_on}T00:00:00`);
+      const threshold = new Date();
+      threshold.setHours(0, 0, 0, 0);
+      threshold.setDate(threshold.getDate() - 29);
+      return climbedOn >= threshold;
+    });
+    const activeDays30 = new Set(recentClimbs.map((climb) => climb.climbed_on)).size;
+    const selfEntry = activeProfile
+      ? {
+          id: activeProfile.id,
+          name: activeProfile.display_name,
+          avatarUrl: activeProfile.avatar_url,
+          level: stats.level,
+          personalBest: stats.personalBest as Grade,
+          recentSends30: recentClimbs.length,
+          activeDays30,
+          score: buildLeaderboardScore(stats.level, stats.personalBest as Grade, recentClimbs.length, activeDays30),
+          isYou: true
+        }
+      : null;
+
+    const friendEntries = friends.map((friend) => ({
+      id: friend.friendId,
+      name: friend.friendName,
+      avatarUrl: friend.avatarUrl,
+      level: friend.level,
+      personalBest: friend.personalBest,
+      recentSends30: friend.recentSends30,
+      activeDays30: friend.activeDays30,
+      score: friend.leaderboardScore,
+      isYou: false
+    }));
+
+    return [selfEntry, ...friendEntries]
+      .filter((entry): entry is NonNullable<typeof selfEntry> => Boolean(entry))
+      .sort((left, right) => right.score - left.score || right.level - left.level || left.name.localeCompare(right.name));
+  }, [activeProfile, climbs, friends, stats.level, stats.personalBest]);
   const maxGradeCount = useMemo(
     () => Math.max(1, ...CLIMB_GRADES.map((grade) => stats.completedByGrade[grade] ?? 0)),
     [stats.completedByGrade]
@@ -1624,6 +1665,37 @@ export default function HomePage() {
                 {friendsTab === "circle" ? (
                   <div className="friends-tab-panel friends-circle-layout">
                     <section className="friends-circle-panel">
+                      <section className="panel leaderboard-panel">
+                        <div className="section-title-row">
+                          <div>
+                            <p className="eyebrow">Leaderboard</p>
+                            <h3>Circle standings</h3>
+                          </div>
+                        </div>
+                        <p className="muted friends-section-copy">Balanced using level, best send, and the last 30 days of activity so old volume does not dominate.</p>
+                        <div className="leaderboard-list">
+                          {leaderboardEntries.map((entry, index) => (
+                            <article className={clsx("leaderboard-row", entry.isYou && "you")} key={entry.id}>
+                              <div className="leaderboard-rank">{index + 1}</div>
+                              {renderProfileAvatar(entry.name, entry.avatarUrl, "friend-avatar")}
+                              <div className="leaderboard-copy">
+                                <div className="friend-name-line">
+                                  <strong>{entry.name}</strong>
+                                  {entry.isYou ? <span className="mini-badge ready">You</span> : null}
+                                </div>
+                                <p className="muted friend-row-meta">
+                                  Lv {entry.level} | PB {entry.personalBest} | {entry.recentSends30} sends in 30d
+                                </p>
+                              </div>
+                              <div className="leaderboard-score">
+                                <strong>{entry.score}</strong>
+                                <span>score</span>
+                              </div>
+                            </article>
+                          ))}
+                        </div>
+                      </section>
+
                       <div className="section-title-row">
                         <div>
                           <p className="eyebrow">Friends</p>
