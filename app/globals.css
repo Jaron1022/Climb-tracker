@@ -166,6 +166,7 @@ button {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
+  padding-bottom: 6.5rem;
 }
 
 .dashboard-top h1,
@@ -319,6 +320,7 @@ button {
 .friends-page {
   display: grid;
   gap: 1rem;
+  padding-bottom: 6.5rem;
 }
 
 .friends-shell {

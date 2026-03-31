@@ -1853,13 +1853,13 @@ export default function HomePage() {
           ) : null}
 
           <nav className="bottom-nav" aria-label="Primary navigation">
-            {[
-              { key: "home", label: "Dashboard", shortLabel: "Home" },
-              { key: "history", label: "History", shortLabel: "History" },
-              { key: "friends", label: "Friends", shortLabel: "Friends" },
-              { key: "progress", label: "Progress", shortLabel: "Progress" },
-              { key: "account", label: "Account", shortLabel: "Account" }
-            ].map((item) => (
+              {[
+                { key: "home", label: "Dashboard", shortLabel: "Home" },
+                { key: "history", label: "History", shortLabel: "History" },
+                { key: "progress", label: "Progress", shortLabel: "Progress" },
+                { key: "friends", label: "Friends", shortLabel: "Friends" },
+                { key: "account", label: "Account", shortLabel: "Account" }
+              ].map((item) => (
               <button
                 key={item.key}
                 className={clsx("bottom-nav-link", activeView === item.key && "active")}
