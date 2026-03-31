@@ -94,7 +94,7 @@ export default function HomePage() {
   const [isEmblemPickerOpen, setIsEmblemPickerOpen] = useState(false);
   const [selectedEmblemDraft, setSelectedEmblemDraft] = useState<string[]>([]);
   const [isBorderPickerOpen, setIsBorderPickerOpen] = useState(false);
-  const [selectedBorderDraft, setSelectedBorderDraft] = useState<string>(serializeAvatarBorderSelection("core", "default"));
+  const [selectedBorderDraft, setSelectedBorderDraft] = useState<string>(serializeAvatarBorderSelection("ring", "silver"));
   const [historyGradeFilter, setHistoryGradeFilter] = useState<"All" | ClimbRow["grade"]>("All");
   const [historyTagQuery, setHistoryTagQuery] = useState("");
   const [historyVisibleCount, setHistoryVisibleCount] = useState(20);
@@ -751,7 +751,7 @@ export default function HomePage() {
     () => normalizeSelectedEmblems(activeProfile?.selected_emblems ?? [], unlockedEmblemIds),
     [activeProfile?.selected_emblems, unlockedEmblemIds]
   );
-  const selectedAvatarBorderValue = activeProfile?.selected_avatar_border ?? serializeAvatarBorderSelection("core", "default");
+  const selectedAvatarBorderValue = activeProfile?.selected_avatar_border ?? serializeAvatarBorderSelection("ring", "silver");
   const selectedAvatarBorder = useMemo(
     () => normalizeSelectedAvatarBorder(selectedAvatarBorderValue),
     [selectedAvatarBorderValue]
@@ -1153,38 +1153,40 @@ export default function HomePage() {
       {isEmblemPickerOpen ? (
         <section className="lightbox emblem-picker-overlay" aria-label="Select emblems" role="dialog">
           <div className="panel emblem-picker-modal">
-            <div className="emblem-picker-handle" aria-hidden="true" />
-            <div className="section-title-row">
-              <div>
-                <p className="eyebrow">Select emblems</p>
-                <h2>Your badge loadout</h2>
+            <div className="emblem-picker-static">
+              <div className="emblem-picker-handle" aria-hidden="true" />
+              <div className="section-title-row">
+                <div>
+                  <p className="eyebrow">Select emblems</p>
+                  <h2>Your badge loadout</h2>
+                </div>
+                <button className="secondary-button emblem-picker-close" onClick={() => setIsEmblemPickerOpen(false)} type="button">
+                  Close
+                </button>
               </div>
-              <button className="secondary-button emblem-picker-close" onClick={() => setIsEmblemPickerOpen(false)} type="button">
-                Close
-              </button>
-            </div>
-            <p className="muted emblem-picker-copy">Choose up to 3 emblems to show on your profile. Unlocked emblems reflect your climbing milestones.</p>
-            <div className="emblem-selected-row">
-              {[0, 1, 2].map((slot) => {
-                const emblemId = selectedEmblemDraft[slot];
-                const emblem = EMBLEM_DEFINITIONS.find((item) => item.id === emblemId);
+              <p className="muted emblem-picker-copy">Choose up to 3 emblems to show on your profile. Unlocked emblems reflect your climbing milestones.</p>
+              <div className="emblem-selected-row">
+                {[0, 1, 2].map((slot) => {
+                  const emblemId = selectedEmblemDraft[slot];
+                  const emblem = EMBLEM_DEFINITIONS.find((item) => item.id === emblemId);
 
-                return (
-                  <div className="emblem-selected-slot" key={slot}>
-                    {emblem ? (
-                      <button
-                        className="emblem-selected-button"
-                        onClick={() => removeDraftEmblem(emblem.id)}
-                        type="button"
-                      >
-                        {renderEmblemBadge(emblem.id, "large")}
-                      </button>
-                    ) : (
-                      <span className="muted">Empty</span>
-                    )}
-                  </div>
-                );
-              })}
+                  return (
+                    <div className="emblem-selected-slot" key={slot}>
+                      {emblem ? (
+                        <button
+                          className="emblem-selected-button"
+                          onClick={() => removeDraftEmblem(emblem.id)}
+                          type="button"
+                        >
+                          {renderEmblemBadge(emblem.id, "large")}
+                        </button>
+                      ) : (
+                        <span className="muted">Empty</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
             <div className="emblem-picker-scroll">
               <section className="emblem-section">
@@ -1256,7 +1258,7 @@ export default function HomePage() {
                 Close
               </button>
             </div>
-            <p className="muted emblem-picker-copy">Choose a frame family, then tint it with a color swatch. Your frame gets more intricate automatically as your level goes up.</p>
+            <p className="muted emblem-picker-copy">Pick a tint with the swatches below. Your circular frame evolves automatically as you level up.</p>
             <div className="border-preview-row">
               {renderProfileAvatar(
                 activeProfile?.display_name ?? "You",
@@ -1268,39 +1270,7 @@ export default function HomePage() {
               )}
               <p className="muted border-preview-copy">Level {stats.level} preview. The design complexity evolves for you over time.</p>
             </div>
-            <div className="emblem-picker-scroll border-picker-scroll">
-              <section className="emblem-section">
-                <div className="section-title-row">
-                  <div>
-                    <p className="eyebrow">Designs</p>
-                    <h3>Choose a frame path</h3>
-                  </div>
-                </div>
-                <div className="frame-style-grid">
-                  {AVATAR_FRAME_STYLES.map((style) => {
-                    const draft = normalizeSelectedAvatarBorder(selectedBorderDraft);
-                    const borderValue = serializeAvatarBorderSelection(style.id, draft.color);
-                    return (
-                      <button
-                        className={clsx("frame-style-card", draft.style === style.id && "selected")}
-                        key={style.id}
-                        onClick={() => setSelectedBorderDraft(borderValue)}
-                        type="button"
-                      >
-                        {renderProfileAvatar(
-                          activeProfile?.display_name ?? "You",
-                          activeProfile?.avatar_url ?? null,
-                          selectedEmblems,
-                          "friend-avatar border-preview-avatar border-preview-avatar-large",
-                          stats.level,
-                          borderValue
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </section>
-              <section className="emblem-section">
+            <div className="emblem-picker-scroll border-picker-scroll">              <section className="emblem-section">
                 <div className="section-title-row">
                   <div>
                     <p className="eyebrow">Colors</p>
@@ -1351,7 +1321,7 @@ export default function HomePage() {
             <div className="confirm-actions emblem-picker-actions">
               <button
                 className="secondary-button"
-                onClick={() => setSelectedBorderDraft(serializeAvatarBorderSelection("core", "default"))}
+                onClick={() => setSelectedBorderDraft(serializeAvatarBorderSelection("ring", "silver"))}
                 type="button"
               >
                 Reset
@@ -2806,4 +2776,5 @@ function renderNavIcon(view: string) {
       return null;
   }
 }
+
 

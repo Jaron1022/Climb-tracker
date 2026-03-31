@@ -560,13 +560,14 @@ button {
   inset: 0;
   border-radius: inherit;
 }
-.avatar-frame-color-default {
+.avatar-frame-color-silver {
   --avatar-frame-main: #dce8fb;
   --avatar-frame-highlight: rgba(255, 255, 255, 0.3);
   --avatar-frame-shadow: rgba(111, 138, 182, 0.24);
   --avatar-frame-trim: rgba(23, 33, 49, 0.32);
   --avatar-frame-glow: rgba(220, 232, 251, 0.22);
 }
+
 .avatar-frame-color-cobalt {
   --avatar-frame-main: #67c4ff;
   --avatar-frame-highlight: rgba(206, 242, 255, 0.34);
@@ -574,13 +575,63 @@ button {
   --avatar-frame-trim: rgba(18, 39, 68, 0.36);
   --avatar-frame-glow: rgba(103, 196, 255, 0.24);
 }
-.avatar-frame-color-gold {
+
+.avatar-frame-color-violet {
+  --avatar-frame-main: #9e8cff;
+  --avatar-frame-highlight: rgba(230, 220, 255, 0.32);
+  --avatar-frame-shadow: rgba(102, 83, 182, 0.28);
+  --avatar-frame-trim: rgba(39, 28, 78, 0.36);
+  --avatar-frame-glow: rgba(158, 140, 255, 0.24);
+}
+
+.avatar-frame-color-rose {
+  --avatar-frame-main: #ff8fba;
+  --avatar-frame-highlight: rgba(255, 229, 239, 0.32);
+  --avatar-frame-shadow: rgba(188, 96, 138, 0.28);
+  --avatar-frame-trim: rgba(84, 29, 53, 0.36);
+  --avatar-frame-glow: rgba(255, 143, 186, 0.22);
+}
+
+.avatar-frame-color-crimson {
+  --avatar-frame-main: #ff726b;
+  --avatar-frame-highlight: rgba(255, 226, 223, 0.32);
+  --avatar-frame-shadow: rgba(191, 79, 72, 0.3);
+  --avatar-frame-trim: rgba(81, 26, 22, 0.38);
+  --avatar-frame-glow: rgba(255, 114, 107, 0.24);
+}
+
+.avatar-frame-color-amber {
   --avatar-frame-main: #efca57;
   --avatar-frame-highlight: rgba(255, 242, 189, 0.3);
   --avatar-frame-shadow: rgba(174, 132, 34, 0.28);
   --avatar-frame-trim: rgba(70, 52, 16, 0.32);
   --avatar-frame-glow: rgba(239, 202, 87, 0.24);
 }
+
+.avatar-frame-color-lime {
+  --avatar-frame-main: #b8ef63;
+  --avatar-frame-highlight: rgba(239, 255, 202, 0.32);
+  --avatar-frame-shadow: rgba(121, 165, 47, 0.28);
+  --avatar-frame-trim: rgba(41, 62, 15, 0.34);
+  --avatar-frame-glow: rgba(184, 239, 99, 0.22);
+}
+
+.avatar-frame-color-emerald {
+  --avatar-frame-main: #53d8a2;
+  --avatar-frame-highlight: rgba(223, 255, 243, 0.3);
+  --avatar-frame-shadow: rgba(45, 146, 107, 0.28);
+  --avatar-frame-trim: rgba(14, 62, 41, 0.34);
+  --avatar-frame-glow: rgba(83, 216, 162, 0.22);
+}
+
+.avatar-frame-color-teal {
+  --avatar-frame-main: #5edfe2;
+  --avatar-frame-highlight: rgba(220, 255, 255, 0.32);
+  --avatar-frame-shadow: rgba(48, 146, 160, 0.28);
+  --avatar-frame-trim: rgba(16, 61, 68, 0.34);
+  --avatar-frame-glow: rgba(94, 223, 226, 0.22);
+}
+
 .avatar-frame-color-onyx {
   --avatar-frame-main: #a7b7cf;
   --avatar-frame-highlight: rgba(238, 244, 255, 0.22);
@@ -588,144 +639,130 @@ button {
   --avatar-frame-trim: rgba(18, 23, 31, 0.42);
   --avatar-frame-glow: rgba(167, 183, 207, 0.18);
 }
-.avatar-frame-tier-0 {
-  --avatar-frame-inner: 0.18rem;
-  --avatar-frame-outer: 0.18rem;
-}
-.avatar-frame-tier-1 {
-  --avatar-frame-inner: 0.19rem;
-  --avatar-frame-outer: 0.2rem;
-}
-.avatar-frame-tier-2 {
-  --avatar-frame-inner: 0.2rem;
-  --avatar-frame-outer: 0.22rem;
-}
-.avatar-frame-tier-3 {
-  --avatar-frame-inner: 0.22rem;
-  --avatar-frame-outer: 0.24rem;
-}
-.avatar-frame-tier-4 {
-  --avatar-frame-inner: 0.24rem;
-  --avatar-frame-outer: 0.26rem;
-}
-.avatar-frame-tier-5 {
-  --avatar-frame-inner: 0.26rem;
-  --avatar-frame-outer: 0.28rem;
-}
-.avatar-frame-tier-6 {
-  --avatar-frame-inner: 0.27rem;
-  --avatar-frame-outer: 0.31rem;
-}
-.avatar-frame-tier-7 {
-  --avatar-frame-inner: 0.28rem;
-  --avatar-frame-outer: 0.33rem;
-}
-.avatar-frame-tier-8 {
-  --avatar-frame-inner: 0.3rem;
-  --avatar-frame-outer: 0.35rem;
-}
-.avatar-frame-tier-9 {
-  --avatar-frame-inner: 0.32rem;
-  --avatar-frame-outer: 0.37rem;
-}
-.avatar-frame-style-core {
-  --avatar-frame-radius: 26%;
-}
-.avatar-frame-style-core::before {
-  clip-path: polygon(24% 0, 76% 0, 100% 24%, 100% 76%, 76% 100%, 24% 100%, 0 76%, 0 24%);
-}
-.avatar-frame-style-core::after {
-  clip-path: polygon(24% 0, 76% 0, 100% 24%, 100% 76%, 76% 100%, 24% 100%, 0 76%, 0 24%);
-}
-.avatar-frame-style-core > .profile-avatar-accent {
-  clip-path: polygon(18% 2%, 32% 2%, 32% 8%, 68% 8%, 68% 2%, 82% 2%, 98% 18%, 98% 32%, 92% 32%, 92% 68%, 98% 68%, 98% 82%, 82% 98%, 68% 98%, 68% 92%, 32% 92%, 32% 98%, 18% 98%, 2% 82%, 2% 68%, 8% 68%, 8% 32%, 2% 32%, 2% 18%);
-  background: color-mix(in srgb, var(--avatar-frame-main) 18%, transparent);
-  opacity: calc(0.18 + (var(--avatar-frame-outer) * 0.2));
-}
-.avatar-frame-style-core > .profile-avatar-accent::before {
-  inset: 0.24rem;
-  clip-path: inherit;
-  border: 1px solid color-mix(in srgb, var(--avatar-frame-highlight) 68%, transparent);
-  opacity: 0.72;
-}
-.avatar-frame-style-core > .profile-avatar-accent::after {
-  inset: 0.38rem;
-  clip-path: polygon(22% 0, 78% 0, 100% 22%, 100% 78%, 78% 100%, 22% 100%, 0 78%, 0 22%);
-  border: 1px solid color-mix(in srgb, var(--avatar-frame-trim) 55%, transparent);
-  opacity: 0.58;
-}
-.avatar-frame-style-circuit {
+
+.avatar-frame-style-ring {
   --avatar-frame-radius: 999px;
 }
-.avatar-frame-style-circuit::before,
-.avatar-frame-style-circuit::after {
+
+.avatar-frame-style-ring::before,
+.avatar-frame-style-ring::after,
+.avatar-frame-style-ring > .profile-avatar-accent,
+.avatar-frame-style-ring > .profile-avatar-accent::before,
+.avatar-frame-style-ring > .profile-avatar-accent::after {
   border-radius: 999px;
 }
-.avatar-frame-style-circuit > .profile-avatar-accent {
+
+.avatar-frame-style-ring > .profile-avatar-accent {
   inset: calc(-1 * (var(--avatar-frame-outer) + 0.06rem));
-  border-radius: 999px;
-  background:
-    conic-gradient(
-      from 0deg,
-      transparent 0 8%,
-      color-mix(in srgb, var(--avatar-frame-main) 24%, transparent) 8% 16%,
-      transparent 16% 24%,
-      color-mix(in srgb, var(--avatar-frame-main) 24%, transparent) 24% 32%,
-      transparent 32% 40%,
-      color-mix(in srgb, var(--avatar-frame-main) 24%, transparent) 40% 48%,
-      transparent 48% 56%,
-      color-mix(in srgb, var(--avatar-frame-main) 24%, transparent) 56% 64%,
-      transparent 64% 72%,
-      color-mix(in srgb, var(--avatar-frame-main) 24%, transparent) 72% 80%,
-      transparent 80% 88%,
-      color-mix(in srgb, var(--avatar-frame-main) 24%, transparent) 88% 96%,
-      transparent 96% 100%
-    );
-  -webkit-mask: radial-gradient(circle, transparent calc(100% - 0.42rem), #000 calc(100% - 0.42rem));
-  mask: radial-gradient(circle, transparent calc(100% - 0.42rem), #000 calc(100% - 0.42rem));
-  opacity: 0.86;
+  background: radial-gradient(circle, transparent calc(100% - 0.4rem), color-mix(in srgb, var(--avatar-frame-main) 18%, transparent) calc(100% - 0.39rem));
+  opacity: 0.84;
 }
-.avatar-frame-style-circuit > .profile-avatar-accent::before {
-  inset: 0.24rem;
-  border-radius: 999px;
-  border: 1px dashed color-mix(in srgb, var(--avatar-frame-highlight) 70%, transparent);
-  opacity: 0.65;
+
+.avatar-frame-tier-0 > .profile-avatar-accent::before,
+.avatar-frame-tier-0 > .profile-avatar-accent::after {
+  display: none;
 }
-.avatar-frame-style-circuit > .profile-avatar-accent::after {
-  inset: 0.42rem;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--avatar-frame-trim) 60%, transparent);
-  opacity: 0.52;
-}
-.avatar-frame-style-crest {
-  --avatar-frame-radius: 24px;
-}
-.avatar-frame-style-crest::before,
-.avatar-frame-style-crest::after {
-  border-radius: 24px;
-}
-.avatar-frame-style-crest > .profile-avatar-accent {
-  border-radius: 24px;
-  background:
-    radial-gradient(circle at 50% -6%, color-mix(in srgb, var(--avatar-frame-main) 26%, transparent) 0 22%, transparent 22.5%),
-    radial-gradient(circle at 50% 106%, color-mix(in srgb, var(--avatar-frame-main) 26%, transparent) 0 22%, transparent 22.5%),
-    linear-gradient(90deg, color-mix(in srgb, var(--avatar-frame-main) 16%, transparent), transparent 20% 80%, color-mix(in srgb, var(--avatar-frame-main) 16%, transparent));
-  opacity: 0.86;
-}
-.avatar-frame-style-crest > .profile-avatar-accent::before {
+
+.avatar-frame-tier-1 > .profile-avatar-accent::before {
   inset: 0.14rem;
-  border-radius: 20px;
-  border: 1px solid color-mix(in srgb, var(--avatar-frame-highlight) 64%, transparent);
-  box-shadow:
-    inset 0 0 0 0.16rem color-mix(in srgb, var(--avatar-frame-trim) 20%, transparent),
-    inset 0 0 0 0.34rem color-mix(in srgb, var(--avatar-frame-main) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--avatar-frame-highlight) 62%, transparent);
 }
-.avatar-frame-style-crest > .profile-avatar-accent::after {
+
+.avatar-frame-tier-1 > .profile-avatar-accent::after {
+  display: none;
+}
+
+.avatar-frame-tier-2 > .profile-avatar-accent::before {
+  inset: 0.12rem;
+  border: 1px dashed color-mix(in srgb, var(--avatar-frame-highlight) 66%, transparent);
+}
+
+.avatar-frame-tier-2 > .profile-avatar-accent::after {
+  inset: 0.42rem;
+  border: 1px solid color-mix(in srgb, var(--avatar-frame-trim) 48%, transparent);
+}
+
+.avatar-frame-tier-3 > .profile-avatar-accent::before {
+  inset: 0.08rem;
+  background: conic-gradient(from 0deg, transparent 0 10%, color-mix(in srgb, var(--avatar-frame-main) 28%, transparent) 10% 14%, transparent 14% 36%, color-mix(in srgb, var(--avatar-frame-main) 28%, transparent) 36% 40%, transparent 40% 60%, color-mix(in srgb, var(--avatar-frame-main) 28%, transparent) 60% 64%, transparent 64% 86%, color-mix(in srgb, var(--avatar-frame-main) 28%, transparent) 86% 90%, transparent 90% 100%);
+  -webkit-mask: radial-gradient(circle, transparent calc(100% - 0.34rem), #000 calc(100% - 0.34rem));
+  mask: radial-gradient(circle, transparent calc(100% - 0.34rem), #000 calc(100% - 0.34rem));
+}
+
+.avatar-frame-tier-3 > .profile-avatar-accent::after {
+  inset: 0.4rem;
+  border: 1px solid color-mix(in srgb, var(--avatar-frame-highlight) 54%, transparent);
+}
+
+.avatar-frame-tier-4 > .profile-avatar-accent::before {
+  inset: -0.02rem;
+  border: 1px solid color-mix(in srgb, var(--avatar-frame-highlight) 66%, transparent);
+  box-shadow: inset 0 0 0 0.22rem color-mix(in srgb, var(--avatar-frame-main) 12%, transparent);
+}
+
+.avatar-frame-tier-4 > .profile-avatar-accent::after {
+  inset: 0.46rem;
+  border: 1px dashed color-mix(in srgb, var(--avatar-frame-trim) 56%, transparent);
+}
+
+.avatar-frame-tier-5 > .profile-avatar-accent::before {
+  inset: -0.08rem;
+  background: conic-gradient(from 0deg, transparent 0 6%, color-mix(in srgb, var(--avatar-frame-main) 34%, transparent) 6% 12%, transparent 12% 18%, color-mix(in srgb, var(--avatar-frame-main) 24%, transparent) 18% 24%, transparent 24% 30%, color-mix(in srgb, var(--avatar-frame-main) 34%, transparent) 30% 36%, transparent 36% 42%, color-mix(in srgb, var(--avatar-frame-main) 24%, transparent) 42% 48%, transparent 48% 54%, color-mix(in srgb, var(--avatar-frame-main) 34%, transparent) 54% 60%, transparent 60% 66%, color-mix(in srgb, var(--avatar-frame-main) 24%, transparent) 66% 72%, transparent 72% 78%, color-mix(in srgb, var(--avatar-frame-main) 34%, transparent) 78% 84%, transparent 84% 90%, color-mix(in srgb, var(--avatar-frame-main) 24%, transparent) 90% 96%, transparent 96% 100%);
+  -webkit-mask: radial-gradient(circle, transparent calc(100% - 0.4rem), #000 calc(100% - 0.4rem));
+  mask: radial-gradient(circle, transparent calc(100% - 0.4rem), #000 calc(100% - 0.4rem));
+}
+
+.avatar-frame-tier-5 > .profile-avatar-accent::after {
+  inset: 0.38rem;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--avatar-frame-highlight) 52%, transparent), inset 0 0 0 0.18rem color-mix(in srgb, var(--avatar-frame-trim) 18%, transparent);
+}
+
+.avatar-frame-tier-6 > .profile-avatar-accent::before {
   inset: -0.12rem;
-  border-radius: 26px;
-  border: 1px solid color-mix(in srgb, var(--avatar-frame-main) 30%, transparent);
-  opacity: 0.42;
+  background: radial-gradient(circle at 50% 3%, color-mix(in srgb, var(--avatar-frame-main) 38%, transparent) 0 9%, transparent 9.5%), radial-gradient(circle at 97% 50%, color-mix(in srgb, var(--avatar-frame-main) 38%, transparent) 0 9%, transparent 9.5%), radial-gradient(circle at 50% 97%, color-mix(in srgb, var(--avatar-frame-main) 38%, transparent) 0 9%, transparent 9.5%), radial-gradient(circle at 3% 50%, color-mix(in srgb, var(--avatar-frame-main) 38%, transparent) 0 9%, transparent 9.5%);
 }
+
+.avatar-frame-tier-6 > .profile-avatar-accent::after {
+  inset: 0.26rem;
+  border: 1px solid color-mix(in srgb, var(--avatar-frame-highlight) 62%, transparent);
+  box-shadow: inset 0 0 0 0.22rem color-mix(in srgb, var(--avatar-frame-main) 14%, transparent);
+}
+
+.avatar-frame-tier-7 > .profile-avatar-accent::before {
+  inset: -0.16rem;
+  background: conic-gradient(from 0deg, color-mix(in srgb, var(--avatar-frame-main) 26%, transparent) 0 7%, transparent 7% 18%, color-mix(in srgb, var(--avatar-frame-main) 34%, transparent) 18% 25%, transparent 25% 36%, color-mix(in srgb, var(--avatar-frame-main) 26%, transparent) 36% 43%, transparent 43% 54%, color-mix(in srgb, var(--avatar-frame-main) 34%, transparent) 54% 61%, transparent 61% 72%, color-mix(in srgb, var(--avatar-frame-main) 26%, transparent) 72% 79%, transparent 79% 90%, color-mix(in srgb, var(--avatar-frame-main) 34%, transparent) 90% 97%, transparent 97% 100%);
+  -webkit-mask: radial-gradient(circle, transparent calc(100% - 0.44rem), #000 calc(100% - 0.44rem));
+  mask: radial-gradient(circle, transparent calc(100% - 0.44rem), #000 calc(100% - 0.44rem));
+}
+
+.avatar-frame-tier-7 > .profile-avatar-accent::after {
+  inset: 0.24rem;
+  border: 1px dashed color-mix(in srgb, var(--avatar-frame-highlight) 68%, transparent);
+}
+
+.avatar-frame-tier-8 > .profile-avatar-accent::before {
+  inset: -0.18rem;
+  background: radial-gradient(circle at 50% 1%, color-mix(in srgb, var(--avatar-frame-main) 40%, transparent) 0 10%, transparent 10.5%), radial-gradient(circle at 79% 11%, color-mix(in srgb, var(--avatar-frame-main) 22%, transparent) 0 7%, transparent 7.5%), radial-gradient(circle at 99% 50%, color-mix(in srgb, var(--avatar-frame-main) 40%, transparent) 0 10%, transparent 10.5%), radial-gradient(circle at 79% 89%, color-mix(in srgb, var(--avatar-frame-main) 22%, transparent) 0 7%, transparent 7.5%), radial-gradient(circle at 50% 99%, color-mix(in srgb, var(--avatar-frame-main) 40%, transparent) 0 10%, transparent 10.5%), radial-gradient(circle at 21% 89%, color-mix(in srgb, var(--avatar-frame-main) 22%, transparent) 0 7%, transparent 7.5%), radial-gradient(circle at 1% 50%, color-mix(in srgb, var(--avatar-frame-main) 40%, transparent) 0 10%, transparent 10.5%), radial-gradient(circle at 21% 11%, color-mix(in srgb, var(--avatar-frame-main) 22%, transparent) 0 7%, transparent 7.5%);
+}
+
+.avatar-frame-tier-8 > .profile-avatar-accent::after {
+  inset: 0.22rem;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--avatar-frame-highlight) 66%, transparent), inset 0 0 0 0.28rem color-mix(in srgb, var(--avatar-frame-trim) 20%, transparent);
+}
+
+.avatar-frame-tier-9 > .profile-avatar-accent::before {
+  inset: -0.22rem;
+  background: conic-gradient(from 0deg, color-mix(in srgb, var(--avatar-frame-main) 30%, transparent) 0 5%, transparent 5% 10%, color-mix(in srgb, var(--avatar-frame-main) 42%, transparent) 10% 15%, transparent 15% 20%, color-mix(in srgb, var(--avatar-frame-main) 30%, transparent) 20% 25%, transparent 25% 30%, color-mix(in srgb, var(--avatar-frame-main) 42%, transparent) 30% 35%, transparent 35% 40%, color-mix(in srgb, var(--avatar-frame-main) 30%, transparent) 40% 45%, transparent 45% 50%, color-mix(in srgb, var(--avatar-frame-main) 42%, transparent) 50% 55%, transparent 55% 60%, color-mix(in srgb, var(--avatar-frame-main) 30%, transparent) 60% 65%, transparent 65% 70%, color-mix(in srgb, var(--avatar-frame-main) 42%, transparent) 70% 75%, transparent 75% 80%, color-mix(in srgb, var(--avatar-frame-main) 30%, transparent) 80% 85%, transparent 85% 90%, color-mix(in srgb, var(--avatar-frame-main) 42%, transparent) 90% 95%, transparent 95% 100%);
+  -webkit-mask: radial-gradient(circle, transparent calc(100% - 0.48rem), #000 calc(100% - 0.48rem));
+  mask: radial-gradient(circle, transparent calc(100% - 0.48rem), #000 calc(100% - 0.48rem));
+}
+
+.avatar-frame-tier-9 > .profile-avatar-accent::after {
+  inset: 0.16rem;
+  border: 1px solid color-mix(in srgb, var(--avatar-frame-highlight) 70%, transparent);
+  box-shadow: inset 0 0 0 0.2rem color-mix(in srgb, var(--avatar-frame-main) 15%, transparent), inset 0 0 0 0.38rem color-mix(in srgb, var(--avatar-frame-trim) 22%, transparent);
+}
+
 .profile-emblem-row {
   position: absolute;
   left: 50%;
@@ -808,8 +845,8 @@ button {
 .emblem-inner {
   position: relative;
   z-index: 1;
-  width: 78%;
-  height: 78%;
+  width: 84%;
+  height: 84%;
   display: grid;
   place-items: center;
   clip-path: inherit;
@@ -834,7 +871,7 @@ button {
 }
 
 .emblem-inner::after {
-  inset: 0.18rem;
+  inset: 0.12rem;
   background:
     linear-gradient(180deg, rgba(8, 13, 20, 0.1), rgba(255, 255, 255, 0.04) 28%, rgba(255, 255, 255, 0.02) 56%, rgba(0, 0, 0, 0.1)),
     linear-gradient(180deg, color-mix(in srgb, var(--emblem-top) 78%, white), color-mix(in srgb, var(--emblem-bottom) 88%, black));
@@ -1741,6 +1778,28 @@ button {
   padding: 1.2rem;
   max-height: min(84vh, 48rem);
   overflow: hidden;
+  position: relative;
+}
+
+.emblem-picker-static {
+  position: relative;
+  z-index: 3;
+  margin: -1.2rem -1.2rem 0;
+  padding: 1.2rem 1.2rem 0.75rem;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-strong) 98%, transparent), color-mix(in srgb, var(--surface) 98%, transparent));
+  box-shadow: 0 14px 24px rgba(0, 0, 0, 0.1);
+}
+
+.emblem-picker-static::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1rem;
+  height: 1.4rem;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 98%, transparent), rgba(0, 0, 0, 0));
+  pointer-events: none;
 }
 
 .emblem-picker-handle {
@@ -1774,14 +1833,16 @@ button {
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
-  margin-top: 1.45rem;
-  padding-top: 0.95rem;
+  margin-top: 0;
+  padding-top: 1.6rem;
   padding-right: 0.2rem;
-  border-top: 1px solid color-mix(in srgb, var(--line) 76%, transparent);
+  border-top: 0;
+  position: relative;
+  z-index: 1;
 }
 
 .emblem-picker-scroll .emblem-section:first-child {
-  padding-top: 0.75rem;
+  padding-top: 0.2rem;
 }
 
 .emblem-section {
@@ -1898,6 +1959,7 @@ button {
 .border-picker-scroll {
   padding-top: 0.25rem;
 }
+/* legacy frame style grid kept unused */
 .frame-style-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1975,6 +2037,7 @@ button {
 }
 .friend-profile-overlay {
   z-index: 34;
+  align-items: center;
 }
 
 .friend-profile-modal {
@@ -1983,6 +2046,12 @@ button {
   gap: 1rem;
   position: relative;
   padding: 1.25rem;
+  max-height: min(84vh, 44rem);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 }
 
 .friend-profile-header {
@@ -3063,4 +3132,5 @@ button {
     box-shadow: 0 18px 50px rgba(59, 44, 29, 0.12);
   }
 }
+
 
