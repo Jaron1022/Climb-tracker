@@ -1,24 +1,30 @@
-export const AVATAR_BORDER_DEFINITIONS = [
-  { id: "cobalt_t1", name: "Cobalt I", family: "cobalt", tier: 1, unlockLevel: 5, description: "Unlock at level 5." },
-  { id: "cobalt_t2", name: "Cobalt II", family: "cobalt", tier: 2, unlockLevel: 15, description: "Unlock at level 15." },
-  { id: "gold_t1", name: "Gold I", family: "gold", tier: 1, unlockLevel: 25, description: "Unlock at level 25." },
-  { id: "onyx_t1", name: "Onyx I", family: "onyx", tier: 1, unlockLevel: 35, description: "Unlock at level 35." },
-  { id: "cobalt_t3", name: "Cobalt III", family: "cobalt", tier: 3, unlockLevel: 50, description: "Unlock at level 50." },
-  { id: "gold_t2", name: "Gold II", family: "gold", tier: 2, unlockLevel: 75, description: "Unlock at level 75." },
-  { id: "onyx_t2", name: "Onyx II", family: "onyx", tier: 2, unlockLevel: 100, description: "Unlock at level 100." },
-  { id: "summit_t1", name: "Summit I", family: "summit", tier: 1, unlockLevel: 125, description: "Unlock at level 125." }
+export const AVATAR_BORDER_COLORS = [
+  { id: "default", name: "Default", description: "Clean silver-blue frame." },
+  { id: "cobalt", name: "Cobalt", description: "Cool electric blue." },
+  { id: "gold", name: "Gold", description: "Warm gold trim." },
+  { id: "onyx", name: "Onyx", description: "Dark steel finish." }
 ] as const;
 
-export type AvatarBorderId = (typeof AVATAR_BORDER_DEFINITIONS)[number]["id"];
+export const AVATAR_FRAME_TIERS = [
+  { id: 0, name: "Frame I", unlockLevel: 0 },
+  { id: 1, name: "Frame II", unlockLevel: 10 },
+  { id: 2, name: "Frame III", unlockLevel: 25 },
+  { id: 3, name: "Frame IV", unlockLevel: 50 },
+  { id: 4, name: "Frame V", unlockLevel: 75 },
+  { id: 5, name: "Frame VI", unlockLevel: 100 },
+  { id: 6, name: "Frame VII", unlockLevel: 125 },
+  { id: 7, name: "Frame VIII", unlockLevel: 150 },
+  { id: 8, name: "Frame IX", unlockLevel: 175 },
+  { id: 9, name: "Frame X", unlockLevel: 200 }
+] as const;
 
-export function getUnlockedAvatarBorders(level: number) {
-  return AVATAR_BORDER_DEFINITIONS.filter((border) => level >= border.unlockLevel);
+export type AvatarBorderColorId = (typeof AVATAR_BORDER_COLORS)[number]["id"];
+
+export function getAvatarFrameTier(level: number) {
+  return AVATAR_FRAME_TIERS.reduce((current, tier) => (level >= tier.unlockLevel ? tier : current), AVATAR_FRAME_TIERS[0]);
 }
 
-export function normalizeSelectedAvatarBorder(selectedBorder: string | null | undefined, unlockedBorderIds: string[]) {
-  if (!selectedBorder) {
-    return null;
-  }
-
-  return unlockedBorderIds.includes(selectedBorder) ? selectedBorder : null;
+export function normalizeSelectedAvatarBorder(selectedBorder: string | null | undefined) {
+  const known = new Set<string>(AVATAR_BORDER_COLORS.map((color) => color.id));
+  return known.has(selectedBorder ?? "") ? (selectedBorder as AvatarBorderColorId) : "default";
 }
