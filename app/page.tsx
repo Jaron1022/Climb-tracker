@@ -1123,10 +1123,14 @@ export default function HomePage() {
               </button>
             </div>
             <div className="xp-info-grid">
-              {CLIMB_GRADES.map((grade) => (
-                <div className="xp-info-row" key={grade}>
-                  <span>{grade}</span>
-                  <strong>{gradeToXp(grade)} XP</strong>
+              {[CLIMB_GRADES.slice(0, 6), CLIMB_GRADES.slice(6)].map((column, index) => (
+                <div className="xp-info-column" key={index}>
+                  {column.map((grade) => (
+                    <div className="xp-info-row" key={grade}>
+                      <span>{grade}</span>
+                      <strong>{gradeToXp(grade)} XP</strong>
+                    </div>
+                  ))}
                 </div>
               ))}
             </div>

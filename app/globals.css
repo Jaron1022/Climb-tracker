@@ -2467,6 +2467,11 @@ button {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.xp-info-column {
+  display: grid;
+  gap: 0.55rem;
+}
+
 .xp-info-row {
   display: flex;
   justify-content: space-between;

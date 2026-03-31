@@ -129,7 +129,7 @@ export function xpIntoCurrentLevel(xp: number) {
 
 export function xpNeededForNextLevel(level: number) {
   const levelIndex = Math.max(0, level - 1);
-  return 35 + levelIndex * 14 + levelIndex * levelIndex * 4;
+  return 24 + levelIndex * 9 + levelIndex * levelIndex * 3;
 }
 
 export function hasGraduatedGrade(completedByGrade: Record<Grade, number>, grade: Grade) {
