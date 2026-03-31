@@ -709,6 +709,10 @@ export default function HomePage() {
     () => normalizeSelectedEmblems(activeProfile?.selected_emblems ?? [], unlockedEmblemIds),
     [activeProfile?.selected_emblems, unlockedEmblemIds]
   );
+  const selectedFriend = useMemo(
+    () => friends.find((friend) => friend.friendId === selectedFriendId) ?? null,
+    [friends, selectedFriendId]
+  );
   const leaderboardEntries = useMemo(() => {
     const recentClimbs = climbs.filter((climb) => {
       const climbedOn = new Date(`${climb.climbed_on}T00:00:00`);
@@ -878,6 +882,7 @@ export default function HomePage() {
       setError("");
       setSuccess("");
       await removeFriendship(friendshipId);
+      setSelectedFriendId("");
       await refreshFriendsView();
       setSuccess("Friend removed.");
     } catch (err) {
@@ -1174,6 +1179,90 @@ export default function HomePage() {
               </button>
               <button className="primary-button" disabled={loading} onClick={() => void handleSaveEmblems()} type="button">
                 {activeAction === "emblems" ? "Saving..." : "Save emblems"}
+              </button>
+            </div>
+          </div>
+        </section>
+      ) : null}
+      {selectedFriend ? (
+        <section className="lightbox friend-profile-overlay" aria-label={`${selectedFriend.friendName} profile`} role="dialog">
+          <div className="panel friend-profile-modal">
+            <button className="lightbox-close" onClick={() => setSelectedFriendId("")} type="button">
+              Close
+            </button>
+            <div className="friend-profile-header">
+              {renderProfileAvatar(
+                selectedFriend.friendName,
+                selectedFriend.avatarUrl,
+                selectedFriend.selectedEmblems,
+                "account-avatar account-avatar-large friend-profile-avatar"
+              )}
+              <div className="friend-profile-copy">
+                <p className="eyebrow">Climber profile</p>
+                <h2>{selectedFriend.friendName}</h2>
+                <p className="muted">Connected {prettyDate(selectedFriend.createdAt)}</p>
+              </div>
+            </div>
+
+            <div className="friend-profile-stats">
+              <div className="friend-profile-stat">
+                <span>Level</span>
+                <strong>{selectedFriend.level}</strong>
+              </div>
+              <div className="friend-profile-stat">
+                <span>Total sends</span>
+                <strong>{selectedFriend.totalSends}</strong>
+              </div>
+              <div className="friend-profile-stat">
+                <span>Personal best</span>
+                <strong>{selectedFriend.personalBest}</strong>
+              </div>
+              <div className="friend-profile-stat">
+                <span>30d active days</span>
+                <strong>{selectedFriend.activeDays30}</strong>
+              </div>
+            </div>
+
+            <section className="friend-profile-emblems">
+              <div className="section-title-row">
+                <div>
+                  <p className="eyebrow">Selected emblems</p>
+                  <h3>Badge showcase</h3>
+                </div>
+              </div>
+              {selectedFriend.selectedEmblems.length > 0 ? (
+                <div className="friend-emblem-breakdown">
+                  {selectedFriend.selectedEmblems.map((emblemId) => {
+                    const emblem = EMBLEM_DEFINITIONS.find((item) => item.id === emblemId);
+
+                    if (!emblem) {
+                      return null;
+                    }
+
+                    return (
+                      <article className="friend-emblem-card" key={emblem.id}>
+                        {renderEmblemBadge(emblem.id, "large")}
+                        <div>
+                          <strong>{emblem.name}</strong>
+                          <p className="muted">{emblem.description}</p>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="empty-copy">No emblems selected yet.</p>
+              )}
+            </section>
+
+            <div className="friend-profile-actions">
+              <button
+                className="delete-button"
+                disabled={loading}
+                onClick={() => void handleRemoveFriend(selectedFriend.friendshipId)}
+                type="button"
+              >
+                Remove friend
               </button>
             </div>
           </div>
@@ -1916,13 +2005,11 @@ export default function HomePage() {
                           {friends.map((friend) => (
                             <article className={clsx("friend-row", selectedFriendId === friend.friendId && "selected")} key={friend.friendshipId}>
                               <div className="friend-row-stack">
-                                <button
-                                  className="friend-select-button"
-                                  onClick={() =>
-                                    setSelectedFriendId((current) => (current === friend.friendId ? "" : friend.friendId))
-                                  }
-                                  type="button"
-                                >
+                                  <button
+                                    className="friend-select-button"
+                                    onClick={() => setSelectedFriendId(friend.friendId)}
+                                    type="button"
+                                  >
                                   {renderProfileAvatar(friend.friendName, friend.avatarUrl, friend.selectedEmblems, "friend-avatar")}
                                   <div>
                                     <div className="friend-name-line">
@@ -1935,28 +2022,8 @@ export default function HomePage() {
                                     {selectedFriendId === friend.friendId ? "⌃" : "›"}
                                   </span>
                                 </button>
-                                {selectedFriendId === friend.friendId ? (
-                                  <div className="friend-inline-details">
-                                    <div className="friend-inline-stat">
-                                      <span>Total sends</span>
-                                      <strong>{friend.totalSends}</strong>
-                                    </div>
-                                    <div className="friend-inline-stat">
-                                      <span>Personal best</span>
-                                      <strong>{friend.personalBest}</strong>
-                                    </div>
-                                    <button
-                                      className="delete-button friend-inline-remove"
-                                      disabled={loading}
-                                      onClick={() => void handleRemoveFriend(friend.friendshipId)}
-                                      type="button"
-                                    >
-                                      Remove friend
-                                    </button>
-                                  </div>
-                                ) : null}
-                              </div>
-                            </article>
+                                </div>
+                              </article>
                           ))}
                         </div>
                       )}
