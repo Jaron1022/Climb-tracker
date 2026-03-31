@@ -3507,12 +3507,7 @@ button {
     grid-template-columns: 1fr;
   }
 
-  .history-feed {
-    grid-template-columns: 1fr;
-  }
-
-  .friends-circle-layout,
-  .friend-feed {
+  .friends-circle-layout {
     grid-template-columns: 1fr;
   }
 
@@ -3538,6 +3533,11 @@ button {
 
   .two-col,
   .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .history-feed,
+  .friend-feed {
     grid-template-columns: 1fr;
   }
 
