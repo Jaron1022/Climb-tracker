@@ -757,7 +757,10 @@ export default function HomePage() {
       return climbedOn >= threshold;
     });
     const activeDays7 = new Set(recentClimbs.map((climb) => climb.climbed_on)).size;
-    const weeklyStats = buildStats(recentClimbs);
+    const weeklyXp7 = recentClimbs.reduce(
+      (total, climb) => total + climbToXp(climb.grade, Boolean(climb.flashed), climb.grade_modifier ?? null),
+      0
+    );
     const selfEntry = activeProfile
       ? {
           id: activeProfile.id,
@@ -766,11 +769,11 @@ export default function HomePage() {
           selectedEmblems,
           level: stats.level,
           personalBest: stats.personalBest as Grade,
-          hardestSend7: weeklyStats.personalBest as Grade,
+          weeklyXp7,
           recentSends7: recentClimbs.length,
           activeDays7,
-          score: buildLeaderboardScore(weeklyStats.personalBest as Grade, recentClimbs.length, activeDays7),
-          breakdown: getLeaderboardScoreBreakdown(weeklyStats.personalBest as Grade, recentClimbs.length, activeDays7),
+          score: buildLeaderboardScore(weeklyXp7, activeDays7),
+          breakdown: getLeaderboardScoreBreakdown(weeklyXp7, activeDays7),
           isYou: true
         }
       : null;
@@ -2063,7 +2066,7 @@ export default function HomePage() {
                                     {entry.isYou ? <span className="mini-badge ready">You</span> : null}
                                   </div>
                                   <p className="muted friend-row-meta">
-                                    Lv {entry.level} | Best this week {entry.hardestSend7} | {entry.recentSends7} sends in 7d
+                                    Lv {entry.level} | {entry.weeklyXp7} XP in 7d | {entry.recentSends7} sends
                                   </p>
                                 </div>
                                 <div className="leaderboard-score">
@@ -2074,15 +2077,11 @@ export default function HomePage() {
                               {isExpanded ? (
                                 <div className="leaderboard-breakdown">
                                   <div className="leaderboard-breakdown-row">
-                                    <span>Hardest send this week ({entry.hardestSend7})</span>
-                                    <strong>{entry.breakdown.hardestSendPoints}</strong>
+                                    <span>XP earned this week</span>
+                                    <strong>{entry.breakdown.weeklyXpPoints}</strong>
                                   </div>
                                   <div className="leaderboard-breakdown-row">
-                                    <span>Sends this week</span>
-                                    <strong>{entry.breakdown.recentSendsPoints}</strong>
-                                  </div>
-                                  <div className="leaderboard-breakdown-row">
-                                    <span>Active days (max 4 this week)</span>
+                                    <span>Active days bonus (max 4 this week)</span>
                                     <strong>{entry.breakdown.activeDaysPoints}</strong>
                                   </div>
                                 </div>
