@@ -1356,7 +1356,7 @@ export default function HomePage() {
                           activeProfile?.display_name ?? "You",
                           activeProfile?.avatar_url ?? null,
                           [],
-                          "friend-avatar border-preview-avatar",
+                          "friend-avatar border-preview-avatar border-preview-avatar-large",
                           stats.level,
                           borderValue
                         )}
