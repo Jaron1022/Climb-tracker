@@ -63,6 +63,5 @@ export function resolveAvatarFrameTier(level: number, selectedBorder: string | n
     return maxUnlockedTier;
   }
 
-  const selectedTier = AVATAR_FRAME_TIERS.find((tier) => tier.id === config.tierId) ?? maxUnlockedTier;
-  return selectedTier.unlockLevel <= maxUnlockedTier.unlockLevel ? selectedTier : maxUnlockedTier;
+  return AVATAR_FRAME_TIERS.find((tier) => tier.id === config.tierId) ?? maxUnlockedTier;
 }

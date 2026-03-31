@@ -1291,7 +1291,7 @@ export default function HomePage() {
                   Close
                 </button>
               </div>
-              <p className="muted emblem-picker-copy">Pick a tint, then choose any frame tier you have already reached. For now, every level border is available as soon as you hit that level.</p>
+              <p className="muted emblem-picker-copy">Pick a tint, then try any frame tier you want for now while we keep refining the border designs.</p>
               <div className="border-preview-row">
                 {renderProfileAvatar(
                   activeProfile?.display_name ?? "You",
@@ -1339,17 +1339,15 @@ export default function HomePage() {
                 <div className="frame-tier-strip">
                   {AVATAR_FRAME_TIERS.map((tier) => {
                     const draft = normalizeSelectedAvatarBorder(selectedBorderDraft);
-                    const isUnlocked = stats.level >= tier.unlockLevel;
                     const borderValue = serializeAvatarBorderSelection(draft.style, draft.color, tier.id);
                     return (
                       <button
                         className={clsx(
                           "frame-tier-chip",
-                          isUnlocked && "unlocked",
+                          "unlocked",
                           draft.tierId === tier.id && "selected",
-                          !isUnlocked && "locked"
+                          stats.level < tier.unlockLevel && "locked"
                         )}
-                        disabled={!isUnlocked}
                         key={tier.id}
                         onClick={() => setSelectedBorderDraft(borderValue)}
                         type="button"
