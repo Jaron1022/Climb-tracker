@@ -18,10 +18,6 @@ export const EMBLEM_DEFINITIONS = [
   { id: "v6_hunter", name: "V6 Hunter", icon: "star", tone: "violet", family: "grade", tier: 2, description: "Send a V6 or harder." },
   { id: "v7_legend", name: "V7 Legend", icon: "star", tone: "pink", family: "grade", tier: 3, description: "Send a V7 or harder." },
   { id: "v8_orbit", name: "V8 Orbit", icon: "star", tone: "sunset", family: "grade", tier: 3, description: "Send a V8 or harder." },
-  { id: "level_5", name: "Level 5", icon: "shield", tone: "blue", family: "level", tier: 1, description: "Reach level 5." },
-  { id: "level_10", name: "Level 10", icon: "shield", tone: "indigo", family: "level", tier: 1, description: "Reach level 10." },
-  { id: "level_20", name: "Level 20", icon: "shield", tone: "emerald", family: "level", tier: 2, description: "Reach level 20." },
-  { id: "level_30", name: "Level 30", icon: "shield", tone: "gold", family: "level", tier: 3, description: "Reach level 30." },
   { id: "slab_sampler", name: "Slab Sampler", icon: "triangle", tone: "cyan", family: "style", tier: 1, description: "Log 5 slab climbs." },
   { id: "slab_sage", name: "Slab Sage", icon: "triangle", tone: "mint", family: "style", tier: 1, description: "Log 10 slab climbs." },
   { id: "overhang_operator", name: "Overhang Operator", icon: "roof", tone: "blue", family: "style", tier: 1, description: "Log 5 overhang climbs." },
@@ -89,10 +85,6 @@ export function getUnlockedEmblems(climbs: ClimbRow[]) {
   if (personalBestRank >= gradeRank("V6")) unlocked.add("v6_hunter");
   if (personalBestRank >= gradeRank("V7")) unlocked.add("v7_legend");
   if (personalBestRank >= gradeRank("V8")) unlocked.add("v8_orbit");
-  if (stats.level >= 5) unlocked.add("level_5");
-  if (stats.level >= 10) unlocked.add("level_10");
-  if (stats.level >= 20) unlocked.add("level_20");
-  if (stats.level >= 30) unlocked.add("level_30");
   if (completedClimbs.filter((climb) => climb.style_tags.includes("slab")).length >= 5) unlocked.add("slab_sampler");
   if (completedClimbs.filter((climb) => climb.style_tags.includes("slab")).length >= 10) unlocked.add("slab_sage");
   if (completedClimbs.filter((climb) => climb.style_tags.includes("overhang")).length >= 5) unlocked.add("overhang_operator");

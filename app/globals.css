@@ -513,6 +513,130 @@ button {
   position: relative;
   display: inline-grid;
   place-items: center;
+  --avatar-border-main: transparent;
+  --avatar-border-glow: transparent;
+  --avatar-border-shadow: transparent;
+}
+
+.profile-avatar-wrap::before,
+.profile-avatar-wrap::after {
+  content: "";
+  position: absolute;
+  inset: -0.26rem;
+  border-radius: 999px;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 0;
+}
+
+.profile-avatar-wrap::before {
+  box-shadow:
+    inset 0 0 0 2px var(--avatar-border-main),
+    inset 0 0 0 5px rgba(255, 255, 255, 0.04),
+    0 0 0 1px rgba(255, 255, 255, 0.12),
+    0 10px 24px var(--avatar-border-shadow);
+}
+
+.profile-avatar-wrap::after {
+  inset: -0.38rem;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--avatar-border-main) 55%, transparent),
+    0 0 24px var(--avatar-border-glow);
+}
+
+.profile-avatar-wrap[class*="avatar-border-"]::before,
+.profile-avatar-wrap[class*="avatar-border-"]::after {
+  opacity: 1;
+}
+
+.avatar-border-cobalt_t1 {
+  --avatar-border-main: #78bcff;
+  --avatar-border-glow: rgba(120, 188, 255, 0.26);
+  --avatar-border-shadow: rgba(55, 110, 178, 0.24);
+}
+
+.avatar-border-cobalt_t2 {
+  --avatar-border-main: #5bc7ff;
+  --avatar-border-glow: rgba(91, 199, 255, 0.3);
+  --avatar-border-shadow: rgba(40, 121, 180, 0.28);
+}
+
+.avatar-border-cobalt_t2::before {
+  box-shadow:
+    inset 0 0 0 2px var(--avatar-border-main),
+    inset 0 0 0 6px rgba(255, 255, 255, 0.05),
+    inset 0 0 0 8px rgba(13, 30, 52, 0.34),
+    0 10px 24px var(--avatar-border-shadow);
+}
+
+.avatar-border-cobalt_t3 {
+  --avatar-border-main: #54ccff;
+  --avatar-border-glow: rgba(84, 204, 255, 0.34);
+  --avatar-border-shadow: rgba(39, 128, 193, 0.3);
+}
+
+.avatar-border-cobalt_t3::before {
+  box-shadow:
+    inset 0 0 0 2px var(--avatar-border-main),
+    inset 0 0 0 6px rgba(255, 255, 255, 0.06),
+    inset 0 0 0 9px rgba(10, 23, 40, 0.42),
+    inset 0 0 0 11px rgba(84, 204, 255, 0.18),
+    0 10px 24px var(--avatar-border-shadow);
+}
+
+.avatar-border-gold_t1 {
+  --avatar-border-main: #f0c24f;
+  --avatar-border-glow: rgba(240, 194, 79, 0.28);
+  --avatar-border-shadow: rgba(168, 122, 30, 0.28);
+}
+
+.avatar-border-gold_t2 {
+  --avatar-border-main: #f6d76d;
+  --avatar-border-glow: rgba(246, 215, 109, 0.34);
+  --avatar-border-shadow: rgba(181, 135, 35, 0.32);
+}
+
+.avatar-border-gold_t2::before {
+  box-shadow:
+    inset 0 0 0 2px var(--avatar-border-main),
+    inset 0 0 0 6px rgba(255, 255, 255, 0.07),
+    inset 0 0 0 9px rgba(60, 43, 10, 0.36),
+    0 10px 24px var(--avatar-border-shadow);
+}
+
+.avatar-border-onyx_t1 {
+  --avatar-border-main: #8f9bb3;
+  --avatar-border-glow: rgba(143, 155, 179, 0.22);
+  --avatar-border-shadow: rgba(63, 74, 92, 0.26);
+}
+
+.avatar-border-onyx_t2 {
+  --avatar-border-main: #b8c3d8;
+  --avatar-border-glow: rgba(184, 195, 216, 0.28);
+  --avatar-border-shadow: rgba(63, 74, 92, 0.3);
+}
+
+.avatar-border-onyx_t2::before {
+  box-shadow:
+    inset 0 0 0 2px var(--avatar-border-main),
+    inset 0 0 0 6px rgba(255, 255, 255, 0.05),
+    inset 0 0 0 9px rgba(18, 24, 33, 0.5),
+    0 10px 24px var(--avatar-border-shadow);
+}
+
+.avatar-border-summit_t1 {
+  --avatar-border-main: #dbe8ff;
+  --avatar-border-glow: rgba(219, 232, 255, 0.36);
+  --avatar-border-shadow: rgba(118, 148, 196, 0.34);
+}
+
+.avatar-border-summit_t1::before {
+  box-shadow:
+    inset 0 0 0 2px var(--avatar-border-main),
+    inset 0 0 0 6px rgba(255, 255, 255, 0.08),
+    inset 0 0 0 9px rgba(39, 61, 98, 0.32),
+    inset 0 0 0 12px rgba(226, 236, 255, 0.22),
+    0 10px 28px var(--avatar-border-shadow);
 }
 
 .profile-emblem-row {
@@ -523,6 +647,7 @@ button {
   display: flex;
   align-items: center;
   gap: 0.18rem;
+  z-index: 2;
 }
 
 .profile-emblem-row .emblem-badge:nth-child(1) {
@@ -596,8 +721,8 @@ button {
 .emblem-inner {
   position: relative;
   z-index: 1;
-  width: 76%;
-  height: 76%;
+  width: 68%;
+  height: 68%;
   display: grid;
   place-items: center;
   clip-path: inherit;
@@ -674,13 +799,13 @@ button {
 }
 
 .emblem-badge.small .emblem-inner {
-  width: 72%;
-  height: 72%;
+  width: 62%;
+  height: 62%;
 }
 
 .emblem-badge.large .emblem-inner {
-  width: 74%;
-  height: 74%;
+  width: 66%;
+  height: 66%;
 }
 
 .emblem-badge.small::before {
@@ -729,8 +854,8 @@ button {
 
 .emblem-family-style .emblem-inner,
 .emblem-family-movement .emblem-inner {
-  width: 69%;
-  height: 69%;
+  width: 61%;
+  height: 61%;
 }
 
 .emblem-family-flash {
@@ -744,8 +869,8 @@ button {
 
 .emblem-family-flash .emblem-inner,
 .emblem-family-mastery .emblem-inner {
-  width: 66%;
-  height: 66%;
+  width: 58%;
+  height: 58%;
 }
 
 .emblem-family-color {
@@ -769,8 +894,8 @@ button {
 .emblem-family-consistency .emblem-inner,
 .emblem-family-grade .emblem-inner,
 .emblem-family-level .emblem-inner {
-  width: 70%;
-  height: 70%;
+  width: 62%;
+  height: 62%;
 }
 
 .emblem-family-mastery {
@@ -820,6 +945,8 @@ button {
 .profile-avatar-image {
   display: block;
   object-fit: cover;
+  position: relative;
+  z-index: 1;
 }
 
 .account-avatar,
@@ -833,6 +960,8 @@ button {
   height: 3.1rem;
   display: grid;
   place-items: center;
+  position: relative;
+  z-index: 1;
   background: color-mix(in srgb, var(--accent) 18%, var(--surface-control-strong));
   border: 1px solid color-mix(in srgb, var(--accent) 24%, transparent);
   color: var(--accent-deep);
@@ -1563,6 +1692,10 @@ button {
   border-top: 1px solid color-mix(in srgb, var(--line) 76%, transparent);
 }
 
+.emblem-picker-scroll .emblem-section:first-child {
+  padding-top: 1.1rem;
+}
+
 .emblem-section {
   display: grid;
   gap: 0.75rem;
@@ -1658,6 +1791,54 @@ button {
   bottom: 0;
   padding-top: 0.85rem;
   background: linear-gradient(180deg, rgba(0, 0, 0, 0), color-mix(in srgb, var(--surface) 98%, transparent) 28%);
+}
+
+.border-picker-modal {
+  width: min(100%, 42rem);
+}
+
+.border-preview-row {
+  display: grid;
+  justify-items: center;
+  padding: 0.6rem 0 0.2rem;
+}
+
+.border-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.border-card {
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+  padding: 0.9rem 0.7rem;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface-control) 94%, transparent);
+  text-align: center;
+  color: var(--text);
+}
+
+.border-card.selected {
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--line));
+  box-shadow: 0 14px 28px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.border-card.locked {
+  opacity: 0.56;
+}
+
+.border-card strong,
+.border-card span {
+  margin: 0;
+}
+
+.border-preview-avatar {
+  width: 3.25rem;
+  height: 3.25rem;
+  font-size: 1rem;
 }
 
 .friend-profile-overlay {

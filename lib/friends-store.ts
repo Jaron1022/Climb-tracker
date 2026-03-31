@@ -110,6 +110,7 @@ export async function fetchIncomingRequests(userId: string) {
     requesterName: profiles.get(item.requester_id)?.display_name ?? "Climber",
     requesterAvatarUrl: profiles.get(item.requester_id)?.avatar_url ?? null,
     requesterSelectedEmblems: profiles.get(item.requester_id)?.selected_emblems ?? [],
+    requesterSelectedAvatarBorder: profiles.get(item.requester_id)?.selected_avatar_border ?? null,
     createdAt: item.created_at
   }));
 }
@@ -130,13 +131,14 @@ export async function fetchFriends(userId: string) {
     throw error;
   }
 
-  const profilesById = new Map<string, { display_name: string; avatar_url: string | null; selected_emblems: string[] }>(
+  const profilesById = new Map<string, { display_name: string; avatar_url: string | null; selected_emblems: string[]; selected_avatar_border: string | null }>(
     (data ?? []).map((profile: any) => [
       profile.id,
       {
         display_name: profile.display_name,
         avatar_url: profile.avatar_url ?? null,
-        selected_emblems: profile.selected_emblems ?? []
+        selected_emblems: profile.selected_emblems ?? [],
+        selected_avatar_border: profile.selected_avatar_border ?? null
       }
     ])
   );
@@ -171,6 +173,7 @@ export async function fetchFriends(userId: string) {
         friendName: friendProfile?.display_name ?? "Climber",
         avatarUrl: friendProfile?.avatar_url ?? null,
         selectedEmblems: friendProfile?.selected_emblems ?? [],
+        selectedAvatarBorder: friendProfile?.selected_avatar_border ?? null,
         createdAt: item.responded_at ?? item.created_at,
         level: levelFromXp(friendXp),
         totalSends: friendClimbs.length,

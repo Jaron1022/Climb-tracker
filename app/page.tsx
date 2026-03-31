@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
+import { AVATAR_BORDER_DEFINITIONS, getUnlockedAvatarBorders, normalizeSelectedAvatarBorder } from "@/lib/avatar-borders";
 import { EMBLEM_DEFINITIONS, getUnlockedEmblems, normalizeSelectedEmblems } from "@/lib/emblems";
 import { CLIMB_COLORS, CLIMB_GRADES, DEFAULT_FORM, STYLE_TAG_GROUPS, climbToXp, gradeToXp } from "@/lib/xp";
 import { uploadPhoto } from "@/lib/local-store";
@@ -32,6 +33,7 @@ import {
   subscribeToAuthChanges,
   updatePassword,
   updateProfileAvatar,
+  updateSelectedAvatarBorder,
   updateSelectedEmblems,
   updateDisplayName,
   updateClimbForUser
@@ -84,6 +86,8 @@ export default function HomePage() {
   const [isXpInfoOpen, setIsXpInfoOpen] = useState(false);
   const [isEmblemPickerOpen, setIsEmblemPickerOpen] = useState(false);
   const [selectedEmblemDraft, setSelectedEmblemDraft] = useState<string[]>([]);
+  const [isBorderPickerOpen, setIsBorderPickerOpen] = useState(false);
+  const [selectedBorderDraft, setSelectedBorderDraft] = useState<string | null>(null);
   const [historyGradeFilter, setHistoryGradeFilter] = useState<"All" | ClimbRow["grade"]>("All");
   const [historyTagQuery, setHistoryTagQuery] = useState("");
   const [historyVisibleCount, setHistoryVisibleCount] = useState(20);
@@ -414,6 +418,11 @@ export default function HomePage() {
     setIsEmblemPickerOpen(true);
   }
 
+  function openBorderPicker() {
+    setSelectedBorderDraft(selectedAvatarBorder);
+    setIsBorderPickerOpen(true);
+  }
+
   function toggleEmblemSelection(emblemId: string, isUnlocked: boolean) {
     if (!isUnlocked) {
       return;
@@ -450,6 +459,28 @@ export default function HomePage() {
       setActiveProfile(updatedProfile);
       setIsEmblemPickerOpen(false);
       setSuccess("Emblems updated.");
+    } catch (err) {
+      setError(getMessage(err));
+    } finally {
+      setLoading(false);
+      setActiveAction("");
+    }
+  }
+
+  async function handleSaveAvatarBorder() {
+    if (!activeProfileId) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setActiveAction("avatar");
+      setError("");
+      setSuccess("");
+      const updatedProfile = await updateSelectedAvatarBorder(activeProfileId, selectedBorderDraft);
+      setActiveProfile(updatedProfile);
+      setIsBorderPickerOpen(false);
+      setSuccess("Avatar border updated.");
     } catch (err) {
       setError(getMessage(err));
     } finally {
@@ -713,6 +744,16 @@ export default function HomePage() {
     () => normalizeSelectedEmblems(activeProfile?.selected_emblems ?? [], unlockedEmblemIds),
     [activeProfile?.selected_emblems, unlockedEmblemIds]
   );
+  const unlockedAvatarBorders = useMemo(() => getUnlockedAvatarBorders(stats.level), [stats.level]);
+  const unlockedAvatarBorderIds = useMemo(() => unlockedAvatarBorders.map((border) => border.id), [unlockedAvatarBorders]);
+  const lockedAvatarBorders = useMemo(
+    () => AVATAR_BORDER_DEFINITIONS.filter((border) => !unlockedAvatarBorderIds.includes(border.id)),
+    [unlockedAvatarBorderIds]
+  );
+  const selectedAvatarBorder = useMemo(
+    () => normalizeSelectedAvatarBorder(activeProfile?.selected_avatar_border, unlockedAvatarBorderIds),
+    [activeProfile?.selected_avatar_border, unlockedAvatarBorderIds]
+  );
   const selectedFriend = useMemo(
     () => friends.find((friend) => friend.friendId === selectedFriendId) ?? null,
     [friends, selectedFriendId]
@@ -732,6 +773,7 @@ export default function HomePage() {
           name: activeProfile.display_name,
           avatarUrl: activeProfile.avatar_url,
           selectedEmblems,
+          selectedAvatarBorder,
           level: stats.level,
           personalBest: stats.personalBest as Grade,
           recentSends30: recentClimbs.length,
@@ -746,6 +788,7 @@ export default function HomePage() {
       name: friend.friendName,
       avatarUrl: friend.avatarUrl,
       selectedEmblems: friend.selectedEmblems,
+      selectedAvatarBorder: friend.selectedAvatarBorder,
       level: friend.level,
       personalBest: friend.personalBest,
       recentSends30: friend.recentSends30,
@@ -757,7 +800,7 @@ export default function HomePage() {
     return [selfEntry, ...friendEntries]
       .filter((entry): entry is NonNullable<typeof selfEntry> => Boolean(entry))
       .sort((left, right) => right.score - left.score || right.level - left.level || left.name.localeCompare(right.name));
-  }, [activeProfile, climbs, friends, selectedEmblems, stats.level, stats.personalBest]);
+  }, [activeProfile, climbs, friends, selectedAvatarBorder, selectedEmblems, stats.level, stats.personalBest]);
   const maxGradeCount = useMemo(
     () => Math.max(1, ...CLIMB_GRADES.map((grade) => stats.completedByGrade[grade] ?? 0)),
     [stats.completedByGrade]
@@ -1198,6 +1241,94 @@ export default function HomePage() {
           </div>
         </section>
       ) : null}
+      {isBorderPickerOpen ? (
+        <section className="lightbox emblem-picker-overlay" aria-label="Select avatar border" role="dialog">
+          <div className="panel emblem-picker-modal border-picker-modal">
+            <div className="emblem-picker-handle" aria-hidden="true" />
+            <div className="section-title-row">
+              <div>
+                <p className="eyebrow">Avatar border</p>
+                <h2>Choose your frame</h2>
+              </div>
+              <button className="secondary-button emblem-picker-close" onClick={() => setIsBorderPickerOpen(false)} type="button">
+                Close
+              </button>
+            </div>
+            <p className="muted emblem-picker-copy">Borders unlock through level milestones and show up everywhere your profile appears.</p>
+            <div className="border-preview-row">
+              {renderProfileAvatar(
+                activeProfile?.display_name ?? "You",
+                activeProfile?.avatar_url ?? null,
+                selectedEmblems,
+                "account-avatar account-avatar-large",
+                selectedBorderDraft
+              )}
+            </div>
+            <div className="emblem-picker-scroll">
+              <section className="emblem-section">
+                <div className="section-title-row">
+                  <div>
+                    <p className="eyebrow">Unlocked</p>
+                    <h3>Your frames</h3>
+                  </div>
+                </div>
+                <div className="border-grid">
+                  {unlockedAvatarBorders.map((border) => (
+                    <button
+                      className={clsx("border-card", selectedBorderDraft === border.id && "selected")}
+                      key={border.id}
+                      onClick={() => setSelectedBorderDraft((current) => (current === border.id ? null : border.id))}
+                      type="button"
+                    >
+                      {renderProfileAvatar(
+                        activeProfile?.display_name ?? "You",
+                        activeProfile?.avatar_url ?? null,
+                        selectedEmblems,
+                        "friend-avatar border-preview-avatar",
+                        border.id
+                      )}
+                      <strong>{border.name}</strong>
+                      <span>{border.description}</span>
+                    </button>
+                  ))}
+                </div>
+              </section>
+
+              <section className="emblem-section">
+                <div className="section-title-row">
+                  <div>
+                    <p className="eyebrow">Locked</p>
+                    <h3>Level up to unlock more</h3>
+                  </div>
+                </div>
+                <div className="border-grid">
+                  {lockedAvatarBorders.map((border) => (
+                    <div className="border-card locked" key={border.id}>
+                      {renderProfileAvatar(
+                        activeProfile?.display_name ?? "You",
+                        activeProfile?.avatar_url ?? null,
+                        selectedEmblems,
+                        "friend-avatar border-preview-avatar",
+                        border.id
+                      )}
+                      <strong>{border.name}</strong>
+                      <span>Unlocks at level {border.unlockLevel}</span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </div>
+            <div className="confirm-actions emblem-picker-actions">
+              <button className="secondary-button" onClick={() => setSelectedBorderDraft(null)} type="button">
+                Clear border
+              </button>
+              <button className="primary-button" disabled={loading} onClick={() => void handleSaveAvatarBorder()} type="button">
+                {activeAction === "avatar" ? "Saving..." : "Save border"}
+              </button>
+            </div>
+          </div>
+        </section>
+      ) : null}
       {selectedFriend ? (
         <section className="lightbox friend-profile-overlay" aria-label={`${selectedFriend.friendName} profile`} role="dialog">
           <div className="panel friend-profile-modal">
@@ -1209,7 +1340,8 @@ export default function HomePage() {
                 selectedFriend.friendName,
                 selectedFriend.avatarUrl,
                 selectedFriend.selectedEmblems,
-                "account-avatar account-avatar-large friend-profile-avatar"
+                "account-avatar account-avatar-large friend-profile-avatar",
+                selectedFriend.selectedAvatarBorder
               )}
               <div className="friend-profile-copy">
                 <p className="eyebrow">Climber profile</p>
@@ -1747,7 +1879,7 @@ export default function HomePage() {
                 </div>
 
                 <div className="account-profile-hero">
-                  {renderProfileAvatar(activeProfile.display_name, activeProfile.avatar_url, selectedEmblems, "account-avatar account-avatar-large")}
+                    {renderProfileAvatar(activeProfile.display_name, activeProfile.avatar_url, selectedEmblems, "account-avatar account-avatar-large", selectedAvatarBorder)}
                   <div className="account-profile-copy">
                     <strong>{activeProfile.display_name}</strong>
                     <p className="muted">Your photo shows up in Friends and helps your circle recognize you faster.</p>
@@ -1766,11 +1898,14 @@ export default function HomePage() {
                     >
                       {activeAction === "avatar" ? "Uploading..." : activeProfile.avatar_url ? "Change profile photo" : "Add profile photo"}
                     </button>
-                    <button className="secondary-button" disabled={loading} onClick={openEmblemPicker} type="button">
-                      Choose emblems
-                    </button>
+                      <button className="secondary-button" disabled={loading} onClick={openEmblemPicker} type="button">
+                        Choose emblems
+                      </button>
+                      <button className="secondary-button" disabled={loading} onClick={openBorderPicker} type="button">
+                        Choose border
+                      </button>
+                    </div>
                   </div>
-                </div>
 
                 <div className="account-summary">
                   <div className="account-line">
@@ -1906,7 +2041,7 @@ export default function HomePage() {
                           return (
                             <article className="friend-row" key={result.id}>
                               <div className="friend-row-main">
-                                {renderProfileAvatar(result.display_name, result.avatar_url, result.selected_emblems, "friend-avatar")}
+                                {renderProfileAvatar(result.display_name, result.avatar_url, result.selected_emblems, "friend-avatar", result.selected_avatar_border)}
                                 <div>
                                   <strong>{result.display_name}</strong>
                                   <p className="muted friend-row-meta">Tap below to send a friend request.</p>
@@ -1937,7 +2072,7 @@ export default function HomePage() {
                         {incomingRequests.map((request) => (
                           <article className="friend-row" key={request.friendshipId}>
                             <div className="friend-row-main">
-                              {renderProfileAvatar(request.requesterName, request.requesterAvatarUrl, request.requesterSelectedEmblems, "friend-avatar")}
+                              {renderProfileAvatar(request.requesterName, request.requesterAvatarUrl, request.requesterSelectedEmblems, "friend-avatar", request.requesterSelectedAvatarBorder)}
                               <div>
                                 <strong>{request.requesterName}</strong>
                                 <p className="muted friend-row-meta">Requested {prettyDate(request.createdAt)}</p>
@@ -1982,7 +2117,7 @@ export default function HomePage() {
                         {leaderboardEntries.map((entry, index) => (
                           <article className={clsx("leaderboard-row", entry.isYou && "you")} key={entry.id}>
                             <div className="leaderboard-rank">{index + 1}</div>
-                            {renderProfileAvatar(entry.name, entry.avatarUrl, entry.selectedEmblems, "friend-avatar")}
+                            {renderProfileAvatar(entry.name, entry.avatarUrl, entry.selectedEmblems, "friend-avatar", entry.selectedAvatarBorder)}
                             <div className="leaderboard-copy">
                               <div className="friend-name-line">
                                 <strong>{entry.name}</strong>
@@ -2024,7 +2159,7 @@ export default function HomePage() {
                                     onClick={() => setSelectedFriendId(friend.friendId)}
                                     type="button"
                                   >
-                                  {renderProfileAvatar(friend.friendName, friend.avatarUrl, friend.selectedEmblems, "friend-avatar")}
+                                  {renderProfileAvatar(friend.friendName, friend.avatarUrl, friend.selectedEmblems, "friend-avatar", friend.selectedAvatarBorder)}
                                   <div>
                                     <div className="friend-name-line">
                                       <strong>{friend.friendName}</strong>
@@ -2423,11 +2558,17 @@ function initialsForName(name: string) {
     .join("") || "?";
 }
 
-function renderProfileAvatar(name: string, avatarUrl: string | null | undefined, selectedEmblems: string[] | null | undefined, className: string) {
+function renderProfileAvatar(
+  name: string,
+  avatarUrl: string | null | undefined,
+  selectedEmblems: string[] | null | undefined,
+  className: string,
+  selectedAvatarBorder?: string | null
+) {
   const normalizedEmblems = (selectedEmblems ?? []).slice(0, 3);
 
   return (
-    <div className="profile-avatar-wrap">
+    <div className={clsx("profile-avatar-wrap", selectedAvatarBorder && `avatar-border-${selectedAvatarBorder}`)}>
       {avatarUrl ? <img alt={`${name} profile`} className={clsx(className, "profile-avatar-image")} src={avatarUrl} /> : <div className={className}>{initialsForName(name)}</div>}
       {normalizedEmblems.length > 0 ? (
         <div className="profile-emblem-row">
