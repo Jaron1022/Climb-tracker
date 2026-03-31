@@ -491,6 +491,28 @@ button {
   text-align: left;
 }
 
+.friend-select-button:hover .friend-row-chevron,
+.friend-select-button:focus-visible .friend-row-chevron {
+  transform: scale(1.06);
+  border-color: color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
+.friend-row-chevron {
+  margin-left: auto;
+  width: 1.9rem;
+  height: 1.9rem;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface-control) 94%, transparent);
+  color: var(--accent-deep);
+  font-family: "Trebuchet MS", "Gill Sans", sans-serif;
+  font-size: 1.1rem;
+  line-height: 1;
+  transition: transform 140ms ease, border-color 140ms ease, background 140ms ease;
+}
+
 .friend-inline-details {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -515,6 +537,10 @@ button {
 .friend-inline-stat strong {
   font-family: "Trebuchet MS", "Gill Sans", sans-serif;
   font-size: 1rem;
+}
+
+.friend-inline-remove {
+  justify-self: start;
 }
 
 .friend-row-actions {

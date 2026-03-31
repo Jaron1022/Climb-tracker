@@ -1533,8 +1533,13 @@ export default function HomePage() {
                                       <strong>{friend.friendName}</strong>
                                       <span className="friend-level-badge">Lv {friend.level}</span>
                                     </div>
-                                    <p className="muted friend-row-meta">Connected {prettyDate(friend.createdAt)}</p>
+                                    <p className="muted friend-row-meta">
+                                      Connected {prettyDate(friend.createdAt)} | Tap to view details
+                                    </p>
                                   </div>
+                                  <span className="friend-row-chevron" aria-hidden="true">
+                                    {selectedFriendId === friend.friendId ? "−" : "+"}
+                                  </span>
                                 </button>
                                 {selectedFriendId === friend.friendId ? (
                                   <div className="friend-inline-details">
@@ -1546,17 +1551,17 @@ export default function HomePage() {
                                       <span>Personal best</span>
                                       <strong>{friend.personalBest}</strong>
                                     </div>
+                                    <button
+                                      className="delete-button friend-inline-remove"
+                                      disabled={loading}
+                                      onClick={() => void handleRemoveFriend(friend.friendshipId)}
+                                      type="button"
+                                    >
+                                      Remove friend
+                                    </button>
                                   </div>
                                 ) : null}
                               </div>
-                              <button
-                                className="delete-button"
-                                disabled={loading}
-                                onClick={() => void handleRemoveFriend(friend.friendshipId)}
-                                type="button"
-                              >
-                                Remove
-                              </button>
                             </article>
                           ))}
                         </div>
