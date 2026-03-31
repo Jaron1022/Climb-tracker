@@ -60,7 +60,7 @@ export function buildStats(climbs: ClimbRow[]) {
 export function buildProgressStats(climbs: ClimbRow[], range: ProgressRange) {
   const completedClimbs = climbs.filter((climb) => climb.status === "completed");
   const filteredClimbs = filterClimbsByRange(completedClimbs, range);
-  const buckets = buildProgressBuckets(filteredClimbs, range);
+  const { buckets, cadenceLabel } = buildProgressBuckets(filteredClimbs, range);
   const dailyRecap = buildDailyRecap(completedClimbs);
   const activeWeeks = countUniqueWeeks(filteredClimbs);
   const totalWeeks = countCalendarWeeksInRange(range, filteredClimbs);
@@ -106,7 +106,7 @@ export function buildProgressStats(climbs: ClimbRow[], range: ProgressRange) {
 
   return {
     rangeLabel: rangeToLabel(range),
-    cadenceLabel: cadenceLabelForRange(range),
+    cadenceLabel,
     consistencyLabel: consistencyLabelForRange(range, totalWeeks),
     dailyRecap,
     filteredClimbs,
@@ -173,23 +173,47 @@ function buildProgressBuckets(climbs: ClimbRow[], range: ProgressRange) {
   const now = startOfDay(new Date());
 
   if (range === "1W") {
-    return buildDailyBuckets(climbs, now, 7, "week");
+    return { buckets: buildDailyBuckets(climbs, now, 7, "week"), cadenceLabel: "Daily view" };
   }
 
   if (range === "1M") {
-    return buildDailyBuckets(climbs, now, 30, "month");
+    return { buckets: buildDailyBuckets(climbs, now, 30, "month"), cadenceLabel: "Daily view" };
   }
 
   if (range === "3M") {
-    return buildWeeklyBuckets(climbs, now, 13, "quarter");
+    return { buckets: buildWeeklyBuckets(climbs, now, 13, "quarter"), cadenceLabel: "Weekly view" };
   }
 
   if (range === "1Y") {
-    return buildMonthlyBuckets(climbs, now, 12);
+    return { buckets: buildMonthlyBuckets(climbs, now, 12), cadenceLabel: "Monthly view" };
   }
 
-  const monthSpan = Math.max(1, Math.min(12, countMonthsBetween(climbs)));
-  return buildMonthlyBuckets(climbs, now, monthSpan, range === "ALL");
+  const bounds = getClimbDateBounds(climbs);
+
+  if (!bounds) {
+    return { buckets: buildMonthlyBuckets(climbs, now, 1, true), cadenceLabel: "Monthly view" };
+  }
+
+  const spanDays = countDaysBetween(bounds.oldest, bounds.newest);
+
+  if (spanDays <= 31) {
+    return {
+      buckets: buildDailyBuckets(climbs, bounds.newest, spanDays, "month"),
+      cadenceLabel: "Daily view"
+    };
+  }
+
+  if (spanDays <= 120) {
+    return {
+      buckets: buildWeeklyBuckets(climbs, bounds.newest, countWeeksBetween(bounds.oldest, bounds.newest), "quarter"),
+      cadenceLabel: "Weekly view"
+    };
+  }
+
+  return {
+    buckets: buildMonthlyBuckets(climbs, bounds.newest, countMonthsBetweenDates(bounds.oldest, bounds.newest), true),
+    cadenceLabel: "Monthly view"
+  };
 }
 
 function buildDailyBuckets(climbs: ClimbRow[], now: Date, count: number, labelMode: "week" | "month"): ProgressBucket[] {
@@ -324,18 +348,37 @@ function countWeeksBetween(start: Date, end: Date) {
   return Math.max(1, Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000)) + 1);
 }
 
-function countMonthsBetween(climbs: ClimbRow[]) {
-  if (climbs.length === 0) {
-    return 1;
-  }
-
-  const oldest = climbDate(climbs[climbs.length - 1]);
-  const newest = climbDate(climbs[0]);
-  return (newest.getFullYear() - oldest.getFullYear()) * 12 + (newest.getMonth() - oldest.getMonth()) + 1;
-}
-
 function climbDate(climb: ClimbRow) {
   return startOfDay(new Date(`${climb.climbed_on}T12:00:00`));
+}
+
+function getClimbDateBounds(climbs: ClimbRow[]) {
+  if (climbs.length === 0) {
+    return null;
+  }
+
+  return climbs.reduce(
+    (bounds, climb) => {
+      const date = climbDate(climb);
+      return {
+        oldest: date < bounds.oldest ? date : bounds.oldest,
+        newest: date > bounds.newest ? date : bounds.newest
+      };
+    },
+    {
+      oldest: climbDate(climbs[0]),
+      newest: climbDate(climbs[0])
+    }
+  );
+}
+
+function countMonthsBetweenDates(oldest: Date, newest: Date) {
+  return Math.max(1, (newest.getFullYear() - oldest.getFullYear()) * 12 + (newest.getMonth() - oldest.getMonth()) + 1);
+}
+
+function countDaysBetween(oldest: Date, newest: Date) {
+  const diffMs = startOfDay(new Date(newest)).getTime() - startOfDay(new Date(oldest)).getTime();
+  return Math.max(1, Math.floor(diffMs / (24 * 60 * 60 * 1000)) + 1);
 }
 
 function startOfDay(date: Date) {

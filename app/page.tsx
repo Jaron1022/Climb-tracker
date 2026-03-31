@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import clsx from "clsx";
 import { EMBLEM_DEFINITIONS, getUnlockedEmblems, normalizeSelectedEmblems } from "@/lib/emblems";
 import { APP_THEMES, normalizeSelectedTheme } from "@/lib/themes";
-import { CLIMB_COLORS, CLIMB_GRADES, DEFAULT_FORM, STYLE_TAG_GROUPS, climbToXp, gradeToXp } from "@/lib/xp";
+import { CLIMB_COLORS, CLIMB_GRADES, DEFAULT_FORM, FLASH_XP_MULTIPLIER, GRADE_MODIFIER_MULTIPLIERS, STYLE_TAG_GROUPS, climbToXp, gradeToXp } from "@/lib/xp";
 import { uploadPhoto } from "@/lib/local-store";
 import {
   buildLeaderboardScore,
@@ -1133,15 +1133,15 @@ export default function HomePage() {
             <div className="xp-info-modifiers">
               <div className="xp-info-row">
                 <span>`-` modifier</span>
-                <strong>x0.85</strong>
+                <strong>x{GRADE_MODIFIER_MULTIPLIERS["-"].toFixed(2)}</strong>
               </div>
               <div className="xp-info-row">
                 <span>`+` modifier</span>
-                <strong>x1.15</strong>
+                <strong>x{GRADE_MODIFIER_MULTIPLIERS["+"].toFixed(2)}</strong>
               </div>
               <div className="xp-info-row">
                 <span>Flash bonus</span>
-                <strong>x1.35</strong>
+                <strong>x{FLASH_XP_MULTIPLIER.toFixed(2)}</strong>
               </div>
             </div>
             <p className="muted xp-info-note">Final climb XP uses the base grade first, then applies `-` or `+`, then the flash bonus if it was first try.</p>
@@ -1470,7 +1470,7 @@ export default function HomePage() {
               <label className="check-row" htmlFor="flash-toggle">
                 <div>
                   <span className="check-row-label">Flash</span>
-                  <p className="muted check-row-copy">Completed first try for 1.35x XP.</p>
+                  <p className="muted check-row-copy">Completed first try for {FLASH_XP_MULTIPLIER.toFixed(2)}x XP.</p>
                 </div>
                 <input
                   checked={form.flashed}

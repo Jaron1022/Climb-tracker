@@ -67,14 +67,21 @@ const XP_BY_GRADE: Record<Grade, number> = {
   V1: 15,
   V2: 23,
   V3: 35,
-  V4: 53,
-  V5: 80,
-  V6: 120,
-  V7: 180,
-  V8: 270,
-  V9: 405,
-  V10: 608
+  V4: 60,
+  V5: 96,
+  V6: 150,
+  V7: 230,
+  V8: 345,
+  V9: 515,
+  V10: 770
 };
+
+export const GRADE_MODIFIER_MULTIPLIERS: Record<Exclude<GradeModifier, null>, number> = {
+  "-": 0.85,
+  "+": 1.15
+};
+
+export const FLASH_XP_MULTIPLIER = 1.35;
 
 export function gradeToXp(grade: Grade) {
   return XP_BY_GRADE[grade];
@@ -84,13 +91,13 @@ export function climbToXp(grade: Grade, flashed = false, gradeModifier: GradeMod
   let xp = gradeToXp(grade);
 
   if (gradeModifier === "-") {
-    xp *= 0.85;
+    xp *= GRADE_MODIFIER_MULTIPLIERS["-"];
   } else if (gradeModifier === "+") {
-    xp *= 1.15;
+    xp *= GRADE_MODIFIER_MULTIPLIERS["+"];
   }
 
   if (flashed) {
-    xp *= 1.35;
+    xp *= FLASH_XP_MULTIPLIER;
   }
 
   return Math.round(xp);
