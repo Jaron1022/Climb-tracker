@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
-import { CLIMB_COLORS, CLIMB_GRADES, DEFAULT_FORM, STYLE_TAG_GROUPS, climbToXp } from "@/lib/xp";
+import { CLIMB_COLORS, CLIMB_GRADES, DEFAULT_FORM, STYLE_TAG_GROUPS, climbToXp, gradeToXp } from "@/lib/xp";
 import { uploadPhoto } from "@/lib/local-store";
 import {
   buildLeaderboardScore,
@@ -79,6 +79,7 @@ export default function HomePage() {
   const [editingClimb, setEditingClimb] = useState<ClimbRow | null>(null);
   const [isComposerOpen, setIsComposerOpen] = useState(false);
   const [showSaveBurst, setShowSaveBurst] = useState(false);
+  const [isXpInfoOpen, setIsXpInfoOpen] = useState(false);
   const [historyGradeFilter, setHistoryGradeFilter] = useState<"All" | ClimbRow["grade"]>("All");
   const [historyTagQuery, setHistoryTagQuery] = useState("");
   const [historyVisibleCount, setHistoryVisibleCount] = useState(20);
@@ -89,7 +90,7 @@ export default function HomePage() {
   const [friendFeed, setFriendFeed] = useState<FriendFeedClimb[]>([]);
   const [friendFeedVisibleCount, setFriendFeedVisibleCount] = useState(20);
   const [pendingOutgoingFriendIds, setPendingOutgoingFriendIds] = useState<string[]>([]);
-  const [friendsTab, setFriendsTab] = useState<"discover" | "requests" | "circle">("circle");
+  const [friendsTab, setFriendsTab] = useState<"discover" | "requests" | "circle" | "leaderboard">("circle");
   const [progressRange, setProgressRange] = useState<ProgressRange>("ALL");
   const [isLandscapePhone, setIsLandscapePhone] = useState(false);
 
@@ -994,6 +995,44 @@ export default function HomePage() {
             <h1>Rotate your phone back upright</h1>
             <p className="muted">This app is set up for portrait use so the dashboard and climb form stay easy to read.</p>
           </div>
+          </section>
+        ) : null}
+      {isXpInfoOpen ? (
+        <section className="overlay" aria-label="XP breakdown" role="dialog">
+          <div className="panel xp-info-modal">
+            <div className="section-title-row">
+              <div>
+                <p className="eyebrow">XP breakdown</p>
+                <h2>How climb XP works</h2>
+              </div>
+              <button className="lightbox-close" onClick={() => setIsXpInfoOpen(false)} type="button">
+                Close
+              </button>
+            </div>
+            <div className="xp-info-grid">
+              {CLIMB_GRADES.map((grade) => (
+                <div className="xp-info-row" key={grade}>
+                  <span>{grade}</span>
+                  <strong>{gradeToXp(grade)} XP</strong>
+                </div>
+              ))}
+            </div>
+            <div className="xp-info-modifiers">
+              <div className="xp-info-row">
+                <span>`-` modifier</span>
+                <strong>x0.85</strong>
+              </div>
+              <div className="xp-info-row">
+                <span>`+` modifier</span>
+                <strong>x1.15</strong>
+              </div>
+              <div className="xp-info-row">
+                <span>Flash bonus</span>
+                <strong>x1.35</strong>
+              </div>
+            </div>
+            <p className="muted xp-info-note">Final climb XP uses the base grade first, then applies `-` or `+`, then the flash bonus if it was first try.</p>
+          </div>
         </section>
       ) : null}
       <main className="shell shell-dashboard">
@@ -1380,6 +1419,12 @@ export default function HomePage() {
                     </div>
                   </div>
                   <div className="xp-progress-block">
+                    <div className="xp-info-row-header">
+                      <span className="muted">XP rules</span>
+                      <button className="icon-info-button" onClick={() => setIsXpInfoOpen(true)} type="button">
+                        i
+                      </button>
+                    </div>
                     <div className="xp-progress-labels">
                       <span>{stats.xpThisLevel} / {stats.xpNextLevel} XP to next level</span>
                       <span>{Math.round(stats.xpProgressPercent)}%</span>
@@ -1556,7 +1601,15 @@ export default function HomePage() {
                 <div className="section-title-row">
                   <div>
                     <p className="eyebrow">Friends</p>
-                    <h2>{friendsTab === "discover" ? "Find climbers" : friendsTab === "requests" ? "Requests" : "Your circle"}</h2>
+                    <h2>
+                      {friendsTab === "discover"
+                        ? "Find climbers"
+                        : friendsTab === "requests"
+                          ? "Requests"
+                          : friendsTab === "leaderboard"
+                            ? "Leaderboard"
+                            : "Your circle"}
+                    </h2>
                   </div>
                 </div>
 
@@ -1571,6 +1624,9 @@ export default function HomePage() {
                   <button className={clsx("friends-tab", friendsTab === "circle" && "active")} onClick={() => setFriendsTab("circle")} type="button">
                     Circle
                     <span className="friends-tab-count">{friends.length}</span>
+                  </button>
+                  <button className={clsx("friends-tab", friendsTab === "leaderboard" && "active")} onClick={() => setFriendsTab("leaderboard")} type="button">
+                    Leaderboard
                   </button>
                 </div>
 
@@ -1662,40 +1718,44 @@ export default function HomePage() {
                   </div>
                 ) : null}
 
+                {friendsTab === "leaderboard" ? (
+                  <div className="friends-tab-panel">
+                    <section className="panel leaderboard-panel">
+                      <div className="section-title-row">
+                        <div>
+                          <p className="eyebrow">Leaderboard</p>
+                          <h3>Circle standings</h3>
+                        </div>
+                      </div>
+                      <p className="muted friends-section-copy">Balanced using level, best send, and the last 30 days of activity so old volume does not dominate.</p>
+                      <div className="leaderboard-list">
+                        {leaderboardEntries.map((entry, index) => (
+                          <article className={clsx("leaderboard-row", entry.isYou && "you")} key={entry.id}>
+                            <div className="leaderboard-rank">{index + 1}</div>
+                            {renderProfileAvatar(entry.name, entry.avatarUrl, "friend-avatar")}
+                            <div className="leaderboard-copy">
+                              <div className="friend-name-line">
+                                <strong>{entry.name}</strong>
+                                {entry.isYou ? <span className="mini-badge ready">You</span> : null}
+                              </div>
+                              <p className="muted friend-row-meta">
+                                Lv {entry.level} | PB {entry.personalBest} | {entry.recentSends30} sends in 30d
+                              </p>
+                            </div>
+                            <div className="leaderboard-score">
+                              <strong>{entry.score}</strong>
+                              <span>score</span>
+                            </div>
+                          </article>
+                        ))}
+                      </div>
+                    </section>
+                  </div>
+                ) : null}
+
                 {friendsTab === "circle" ? (
                   <div className="friends-tab-panel friends-circle-layout">
                     <section className="friends-circle-panel">
-                      <section className="panel leaderboard-panel">
-                        <div className="section-title-row">
-                          <div>
-                            <p className="eyebrow">Leaderboard</p>
-                            <h3>Circle standings</h3>
-                          </div>
-                        </div>
-                        <p className="muted friends-section-copy">Balanced using level, best send, and the last 30 days of activity so old volume does not dominate.</p>
-                        <div className="leaderboard-list">
-                          {leaderboardEntries.map((entry, index) => (
-                            <article className={clsx("leaderboard-row", entry.isYou && "you")} key={entry.id}>
-                              <div className="leaderboard-rank">{index + 1}</div>
-                              {renderProfileAvatar(entry.name, entry.avatarUrl, "friend-avatar")}
-                              <div className="leaderboard-copy">
-                                <div className="friend-name-line">
-                                  <strong>{entry.name}</strong>
-                                  {entry.isYou ? <span className="mini-badge ready">You</span> : null}
-                                </div>
-                                <p className="muted friend-row-meta">
-                                  Lv {entry.level} | PB {entry.personalBest} | {entry.recentSends30} sends in 30d
-                                </p>
-                              </div>
-                              <div className="leaderboard-score">
-                                <strong>{entry.score}</strong>
-                                <span>score</span>
-                              </div>
-                            </article>
-                          ))}
-                        </div>
-                      </section>
-
                       <div className="section-title-row">
                         <div>
                           <p className="eyebrow">Friends</p>
