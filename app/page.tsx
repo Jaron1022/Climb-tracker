@@ -1354,11 +1354,12 @@ export default function HomePage() {
                       >
                         {renderProfileAvatar(
                           activeProfile?.display_name ?? "You",
-                          activeProfile?.avatar_url ?? null,
+                          null,
                           [],
                           "friend-avatar border-preview-avatar border-preview-avatar-large",
                           stats.level,
-                          borderValue
+                          borderValue,
+                          true
                         )}
                         <span>Lv {tier.unlockLevel}</span>
                       </button>
