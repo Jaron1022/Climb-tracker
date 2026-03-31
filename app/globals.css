@@ -513,180 +513,219 @@ button {
   position: relative;
   display: inline-grid;
   place-items: center;
-  --avatar-frame-main: #d8e6fb;
-  --avatar-frame-highlight: rgba(255, 255, 255, 0.26);
+  --avatar-frame-main: #dce8fb;
+  --avatar-frame-highlight: rgba(255, 255, 255, 0.3);
   --avatar-frame-shadow: rgba(88, 115, 160, 0.24);
-  --avatar-frame-trim: rgba(14, 24, 38, 0.36);
-  --avatar-frame-tier-width: 2px;
-  --avatar-frame-tier-mid: 5px;
-  --avatar-frame-tier-outer: 0px;
+  --avatar-frame-trim: rgba(14, 24, 38, 0.34);
+  --avatar-frame-glow: rgba(220, 232, 251, 0.2);
+  --avatar-frame-inner: 0.28rem;
+  --avatar-frame-outer: 0.3rem;
+  --avatar-frame-radius: 999px;
 }
-
 .profile-avatar-wrap::before,
-.profile-avatar-wrap::after {
+.profile-avatar-wrap::after,
+.profile-avatar-wrap > .profile-avatar-accent,
+.profile-avatar-wrap > .profile-avatar-accent::before,
+.profile-avatar-wrap > .profile-avatar-accent::after {
   content: "";
   position: absolute;
-  inset: -0.26rem;
-  border-radius: 999px;
   pointer-events: none;
-  opacity: 0;
+}
+.profile-avatar-wrap::before,
+.profile-avatar-wrap::after,
+.profile-avatar-wrap > .profile-avatar-accent {
+  inset: calc(-1 * var(--avatar-frame-outer));
+  border-radius: var(--avatar-frame-radius);
   z-index: 0;
 }
-
 .profile-avatar-wrap::before {
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--avatar-frame-main) 88%, white), color-mix(in srgb, var(--avatar-frame-main) 72%, #0f1826));
   box-shadow:
-    inset 0 0 0 var(--avatar-frame-tier-width) var(--avatar-frame-main),
-    inset 0 0 0 var(--avatar-frame-tier-mid) var(--avatar-frame-trim),
-    inset 0 0 0 var(--avatar-frame-tier-outer) color-mix(in srgb, var(--avatar-frame-main) 26%, transparent),
     inset 0 1px 0 var(--avatar-frame-highlight),
-    0 10px 24px var(--avatar-frame-shadow);
+    inset 0 0 0 1px color-mix(in srgb, var(--avatar-frame-trim) 68%, transparent),
+    0 12px 28px var(--avatar-frame-shadow);
 }
-
 .profile-avatar-wrap::after {
-  inset: -0.38rem;
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--avatar-frame-main) 55%, transparent),
-    0 0 24px color-mix(in srgb, var(--avatar-frame-main) 26%, transparent);
+  inset: calc(-1 * (var(--avatar-frame-outer) + 0.08rem));
+  border: 1px solid color-mix(in srgb, var(--avatar-frame-main) 56%, transparent);
+  box-shadow: 0 0 22px color-mix(in srgb, var(--avatar-frame-glow) 78%, transparent);
+  opacity: 0.92;
 }
-
+.profile-avatar-wrap > .profile-avatar-accent {
+  display: block;
+}
+.profile-avatar-wrap > .profile-avatar-accent::before,
+.profile-avatar-wrap > .profile-avatar-accent::after {
+  inset: 0;
+  border-radius: inherit;
+}
 .avatar-frame-color-default {
   --avatar-frame-main: #dce8fb;
-  --avatar-frame-highlight: rgba(255, 255, 255, 0.28);
+  --avatar-frame-highlight: rgba(255, 255, 255, 0.3);
   --avatar-frame-shadow: rgba(111, 138, 182, 0.24);
-  --avatar-frame-trim: rgba(23, 33, 49, 0.34);
+  --avatar-frame-trim: rgba(23, 33, 49, 0.32);
+  --avatar-frame-glow: rgba(220, 232, 251, 0.22);
 }
-
 .avatar-frame-color-cobalt {
   --avatar-frame-main: #67c4ff;
-  --avatar-frame-highlight: rgba(194, 239, 255, 0.32);
+  --avatar-frame-highlight: rgba(206, 242, 255, 0.34);
   --avatar-frame-shadow: rgba(48, 120, 193, 0.28);
-  --avatar-frame-trim: rgba(18, 39, 68, 0.38);
+  --avatar-frame-trim: rgba(18, 39, 68, 0.36);
+  --avatar-frame-glow: rgba(103, 196, 255, 0.24);
 }
-
 .avatar-frame-color-gold {
   --avatar-frame-main: #efca57;
   --avatar-frame-highlight: rgba(255, 242, 189, 0.3);
   --avatar-frame-shadow: rgba(174, 132, 34, 0.28);
-  --avatar-frame-trim: rgba(70, 52, 16, 0.34);
+  --avatar-frame-trim: rgba(70, 52, 16, 0.32);
+  --avatar-frame-glow: rgba(239, 202, 87, 0.24);
 }
-
 .avatar-frame-color-onyx {
   --avatar-frame-main: #a7b7cf;
   --avatar-frame-highlight: rgba(238, 244, 255, 0.22);
   --avatar-frame-shadow: rgba(70, 82, 100, 0.28);
-  --avatar-frame-trim: rgba(18, 23, 31, 0.46);
+  --avatar-frame-trim: rgba(18, 23, 31, 0.42);
+  --avatar-frame-glow: rgba(167, 183, 207, 0.18);
 }
-
 .avatar-frame-tier-0 {
-  --avatar-frame-tier-width: 2px;
-  --avatar-frame-tier-mid: 5px;
-  --avatar-frame-tier-outer: 0px;
+  --avatar-frame-inner: 0.18rem;
+  --avatar-frame-outer: 0.18rem;
 }
-
 .avatar-frame-tier-1 {
-  --avatar-frame-tier-width: 2px;
-  --avatar-frame-tier-mid: 6px;
-  --avatar-frame-tier-outer: 8px;
+  --avatar-frame-inner: 0.19rem;
+  --avatar-frame-outer: 0.2rem;
 }
-
 .avatar-frame-tier-2 {
-  --avatar-frame-tier-width: 2px;
-  --avatar-frame-tier-mid: 6px;
-  --avatar-frame-tier-outer: 10px;
+  --avatar-frame-inner: 0.2rem;
+  --avatar-frame-outer: 0.22rem;
 }
-
-.avatar-frame-tier-2::after {
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--avatar-frame-main) 60%, transparent),
-    0 0 24px color-mix(in srgb, var(--avatar-frame-main) 26%, transparent),
-    0 0 0 7px rgba(255, 255, 255, 0.02);
-}
-
 .avatar-frame-tier-3 {
-  --avatar-frame-tier-width: 2px;
-  --avatar-frame-tier-mid: 7px;
-  --avatar-frame-tier-outer: 11px;
+  --avatar-frame-inner: 0.22rem;
+  --avatar-frame-outer: 0.24rem;
 }
-
-.avatar-frame-tier-3::before {
-  border-radius: 22px;
-}
-
 .avatar-frame-tier-4 {
-  --avatar-frame-tier-width: 2px;
-  --avatar-frame-tier-mid: 7px;
-  --avatar-frame-tier-outer: 12px;
+  --avatar-frame-inner: 0.24rem;
+  --avatar-frame-outer: 0.26rem;
 }
-
-.avatar-frame-tier-4::after {
-  inset: -0.42rem;
-}
-
 .avatar-frame-tier-5 {
-  --avatar-frame-tier-width: 2px;
-  --avatar-frame-tier-mid: 8px;
-  --avatar-frame-tier-outer: 13px;
+  --avatar-frame-inner: 0.26rem;
+  --avatar-frame-outer: 0.28rem;
 }
-
-.avatar-frame-tier-5::before {
-  box-shadow:
-    inset 0 0 0 var(--avatar-frame-tier-width) var(--avatar-frame-main),
-    inset 0 0 0 var(--avatar-frame-tier-mid) var(--avatar-frame-trim),
-    inset 0 0 0 var(--avatar-frame-tier-outer) color-mix(in srgb, var(--avatar-frame-main) 20%, transparent),
-    inset 0 0 0 15px rgba(255, 255, 255, 0.03),
-    inset 0 1px 0 var(--avatar-frame-highlight),
-    0 10px 24px var(--avatar-frame-shadow);
-}
-
 .avatar-frame-tier-6 {
-  --avatar-frame-tier-width: 2px;
-  --avatar-frame-tier-mid: 8px;
-  --avatar-frame-tier-outer: 14px;
+  --avatar-frame-inner: 0.27rem;
+  --avatar-frame-outer: 0.31rem;
 }
-
-.avatar-frame-tier-6::after {
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--avatar-frame-main) 60%, transparent),
-    0 0 24px color-mix(in srgb, var(--avatar-frame-main) 26%, transparent),
-    0 0 0 8px rgba(255, 255, 255, 0.03);
-}
-
 .avatar-frame-tier-7 {
-  --avatar-frame-tier-width: 2px;
-  --avatar-frame-tier-mid: 9px;
-  --avatar-frame-tier-outer: 15px;
+  --avatar-frame-inner: 0.28rem;
+  --avatar-frame-outer: 0.33rem;
 }
-
 .avatar-frame-tier-8 {
-  --avatar-frame-tier-width: 2px;
-  --avatar-frame-tier-mid: 9px;
-  --avatar-frame-tier-outer: 16px;
+  --avatar-frame-inner: 0.3rem;
+  --avatar-frame-outer: 0.35rem;
 }
-
-.avatar-frame-tier-8::before {
-  box-shadow:
-    inset 0 0 0 var(--avatar-frame-tier-width) var(--avatar-frame-main),
-    inset 0 0 0 var(--avatar-frame-tier-mid) var(--avatar-frame-trim),
-    inset 0 0 0 var(--avatar-frame-tier-outer) color-mix(in srgb, var(--avatar-frame-main) 22%, transparent),
-    inset 0 0 0 18px rgba(255, 255, 255, 0.03),
-    inset 0 1px 0 var(--avatar-frame-highlight),
-    0 12px 28px var(--avatar-frame-shadow);
-}
-
 .avatar-frame-tier-9 {
-  --avatar-frame-tier-width: 2px;
-  --avatar-frame-tier-mid: 10px;
-  --avatar-frame-tier-outer: 18px;
+  --avatar-frame-inner: 0.32rem;
+  --avatar-frame-outer: 0.37rem;
 }
-
-.avatar-frame-tier-9::after {
-  inset: -0.48rem;
+.avatar-frame-style-core {
+  --avatar-frame-radius: 26%;
+}
+.avatar-frame-style-core::before {
+  clip-path: polygon(24% 0, 76% 0, 100% 24%, 100% 76%, 76% 100%, 24% 100%, 0 76%, 0 24%);
+}
+.avatar-frame-style-core::after {
+  clip-path: polygon(24% 0, 76% 0, 100% 24%, 100% 76%, 76% 100%, 24% 100%, 0 76%, 0 24%);
+}
+.avatar-frame-style-core > .profile-avatar-accent {
+  clip-path: polygon(18% 2%, 32% 2%, 32% 8%, 68% 8%, 68% 2%, 82% 2%, 98% 18%, 98% 32%, 92% 32%, 92% 68%, 98% 68%, 98% 82%, 82% 98%, 68% 98%, 68% 92%, 32% 92%, 32% 98%, 18% 98%, 2% 82%, 2% 68%, 8% 68%, 8% 32%, 2% 32%, 2% 18%);
+  background: color-mix(in srgb, var(--avatar-frame-main) 18%, transparent);
+  opacity: calc(0.18 + (var(--avatar-frame-outer) * 0.2));
+}
+.avatar-frame-style-core > .profile-avatar-accent::before {
+  inset: 0.24rem;
+  clip-path: inherit;
+  border: 1px solid color-mix(in srgb, var(--avatar-frame-highlight) 68%, transparent);
+  opacity: 0.72;
+}
+.avatar-frame-style-core > .profile-avatar-accent::after {
+  inset: 0.38rem;
+  clip-path: polygon(22% 0, 78% 0, 100% 22%, 100% 78%, 78% 100%, 22% 100%, 0 78%, 0 22%);
+  border: 1px solid color-mix(in srgb, var(--avatar-frame-trim) 55%, transparent);
+  opacity: 0.58;
+}
+.avatar-frame-style-circuit {
+  --avatar-frame-radius: 999px;
+}
+.avatar-frame-style-circuit::before,
+.avatar-frame-style-circuit::after {
+  border-radius: 999px;
+}
+.avatar-frame-style-circuit > .profile-avatar-accent {
+  inset: calc(-1 * (var(--avatar-frame-outer) + 0.06rem));
+  border-radius: 999px;
+  background:
+    conic-gradient(
+      from 0deg,
+      transparent 0 8%,
+      color-mix(in srgb, var(--avatar-frame-main) 24%, transparent) 8% 16%,
+      transparent 16% 24%,
+      color-mix(in srgb, var(--avatar-frame-main) 24%, transparent) 24% 32%,
+      transparent 32% 40%,
+      color-mix(in srgb, var(--avatar-frame-main) 24%, transparent) 40% 48%,
+      transparent 48% 56%,
+      color-mix(in srgb, var(--avatar-frame-main) 24%, transparent) 56% 64%,
+      transparent 64% 72%,
+      color-mix(in srgb, var(--avatar-frame-main) 24%, transparent) 72% 80%,
+      transparent 80% 88%,
+      color-mix(in srgb, var(--avatar-frame-main) 24%, transparent) 88% 96%,
+      transparent 96% 100%
+    );
+  -webkit-mask: radial-gradient(circle, transparent calc(100% - 0.42rem), #000 calc(100% - 0.42rem));
+  mask: radial-gradient(circle, transparent calc(100% - 0.42rem), #000 calc(100% - 0.42rem));
+  opacity: 0.86;
+}
+.avatar-frame-style-circuit > .profile-avatar-accent::before {
+  inset: 0.24rem;
+  border-radius: 999px;
+  border: 1px dashed color-mix(in srgb, var(--avatar-frame-highlight) 70%, transparent);
+  opacity: 0.65;
+}
+.avatar-frame-style-circuit > .profile-avatar-accent::after {
+  inset: 0.42rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--avatar-frame-trim) 60%, transparent);
+  opacity: 0.52;
+}
+.avatar-frame-style-crest {
+  --avatar-frame-radius: 24px;
+}
+.avatar-frame-style-crest::before,
+.avatar-frame-style-crest::after {
+  border-radius: 24px;
+}
+.avatar-frame-style-crest > .profile-avatar-accent {
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 50% -6%, color-mix(in srgb, var(--avatar-frame-main) 26%, transparent) 0 22%, transparent 22.5%),
+    radial-gradient(circle at 50% 106%, color-mix(in srgb, var(--avatar-frame-main) 26%, transparent) 0 22%, transparent 22.5%),
+    linear-gradient(90deg, color-mix(in srgb, var(--avatar-frame-main) 16%, transparent), transparent 20% 80%, color-mix(in srgb, var(--avatar-frame-main) 16%, transparent));
+  opacity: 0.86;
+}
+.avatar-frame-style-crest > .profile-avatar-accent::before {
+  inset: 0.14rem;
+  border-radius: 20px;
+  border: 1px solid color-mix(in srgb, var(--avatar-frame-highlight) 64%, transparent);
   box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--avatar-frame-main) 66%, transparent),
-    0 0 30px color-mix(in srgb, var(--avatar-frame-main) 30%, transparent),
-    0 0 0 9px rgba(255, 255, 255, 0.04);
+    inset 0 0 0 0.16rem color-mix(in srgb, var(--avatar-frame-trim) 20%, transparent),
+    inset 0 0 0 0.34rem color-mix(in srgb, var(--avatar-frame-main) 14%, transparent);
 }
-
+.avatar-frame-style-crest > .profile-avatar-accent::after {
+  inset: -0.12rem;
+  border-radius: 26px;
+  border: 1px solid color-mix(in srgb, var(--avatar-frame-main) 30%, transparent);
+  opacity: 0.42;
+}
 .profile-emblem-row {
   position: absolute;
   left: 50%;
@@ -769,8 +808,8 @@ button {
 .emblem-inner {
   position: relative;
   z-index: 1;
-  width: 72%;
-  height: 72%;
+  width: 78%;
+  height: 78%;
   display: grid;
   place-items: center;
   clip-path: inherit;
@@ -807,8 +846,8 @@ button {
 .emblem-icon {
   position: relative;
   z-index: 1;
-  width: 82%;
-  height: 82%;
+  width: 74%;
+  height: 74%;
   overflow: visible;
   color: #f7fbff;
   filter:
@@ -1735,14 +1774,14 @@ button {
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
-  margin-top: 0.95rem;
-  padding-top: 1.2rem;
+  margin-top: 1.45rem;
+  padding-top: 0.95rem;
   padding-right: 0.2rem;
   border-top: 1px solid color-mix(in srgb, var(--line) 76%, transparent);
 }
 
 .emblem-picker-scroll .emblem-section:first-child {
-  padding-top: 1.5rem;
+  padding-top: 0.75rem;
 }
 
 .emblem-section {
@@ -1849,78 +1888,91 @@ button {
 .border-preview-row {
   display: grid;
   justify-items: center;
-  padding: 0.6rem 0 0.2rem;
+  gap: 0.85rem;
+  padding: 0.55rem 0 0.1rem;
 }
-
 .border-preview-copy {
-  margin: 0.7rem 0 0;
+  margin: 0;
   text-align: center;
 }
-
-.border-grid {
+.border-picker-scroll {
+  padding-top: 0.25rem;
+}
+.frame-style-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.8rem;
 }
-
-.border-card {
+.frame-style-card {
   display: grid;
-  justify-items: center;
-  gap: 0.5rem;
-  padding: 0.9rem 0.7rem;
-  border-radius: 20px;
+  place-items: center;
+  padding: 1rem 0.7rem;
+  border-radius: 22px;
   border: 1px solid var(--line);
   background: color-mix(in srgb, var(--surface-control) 94%, transparent);
-  text-align: center;
   color: var(--text);
 }
-
-.border-card.selected {
-  border-color: color-mix(in srgb, var(--accent) 30%, var(--line));
-  box-shadow: 0 14px 28px color-mix(in srgb, var(--accent) 12%, transparent);
+.frame-style-card.selected {
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--line));
+  box-shadow: 0 14px 28px color-mix(in srgb, var(--accent) 14%, transparent);
 }
-
-.border-card.locked {
-  opacity: 0.56;
+.frame-color-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
-
-.border-card strong,
-.border-card span {
-  margin: 0;
+.frame-color-swatch {
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
+  background:
+    radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.48), transparent 24%),
+    linear-gradient(180deg, color-mix(in srgb, var(--swatch-color) 86%, white), color-mix(in srgb, var(--swatch-color) 78%, black));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.26),
+    0 8px 18px color-mix(in srgb, var(--swatch-color) 24%, transparent);
 }
-
+.frame-color-swatch.selected {
+  transform: translateY(-1px) scale(1.04);
+  border-color: color-mix(in srgb, var(--swatch-color) 72%, white);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 0 0 3px color-mix(in srgb, var(--swatch-color) 18%, transparent),
+    0 10px 22px color-mix(in srgb, var(--swatch-color) 28%, transparent);
+}
 .border-preview-avatar {
   width: 3.25rem;
   height: 3.25rem;
   font-size: 1rem;
 }
-
-.frame-tier-list {
+.border-preview-avatar-large {
+  width: 3.7rem;
+  height: 3.7rem;
+  font-size: 1.08rem;
+}
+.frame-tier-strip {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(82px, 1fr));
   gap: 0.75rem;
 }
-
-.frame-tier-row {
+.frame-tier-chip {
   display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: center;
-  gap: 0.85rem;
-  padding: 0.8rem 0.9rem;
+  justify-items: center;
+  gap: 0.55rem;
+  padding: 0.8rem 0.5rem;
   border-radius: 18px;
   border: 1px solid var(--line);
   background: color-mix(in srgb, var(--surface-control) 94%, transparent);
-  opacity: 0.62;
+  opacity: 0.68;
 }
-
-.frame-tier-row.unlocked {
+.frame-tier-chip.unlocked {
   opacity: 1;
 }
-
-.frame-tier-row strong,
-.frame-tier-row span {
-  margin: 0;
+.frame-tier-chip span {
+  font-size: 0.8rem;
+  color: var(--muted);
 }
-
 .friend-profile-overlay {
   z-index: 34;
 }
@@ -3011,3 +3063,4 @@ button {
     box-shadow: 0 18px 50px rgba(59, 44, 29, 0.12);
   }
 }
+

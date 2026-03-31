@@ -1,8 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
-import { AVATAR_BORDER_COLORS, AVATAR_FRAME_TIERS, getAvatarFrameTier, normalizeSelectedAvatarBorder } from "@/lib/avatar-borders";
+import {
+  AVATAR_BORDER_COLORS,
+  AVATAR_FRAME_STYLES,
+  AVATAR_FRAME_TIERS,
+  getAvatarFrameTier,
+  normalizeSelectedAvatarBorder,
+  serializeAvatarBorderSelection
+} from "@/lib/avatar-borders";
 import { EMBLEM_DEFINITIONS, getUnlockedEmblems, normalizeSelectedEmblems } from "@/lib/emblems";
 import { CLIMB_COLORS, CLIMB_GRADES, DEFAULT_FORM, STYLE_TAG_GROUPS, climbToXp, gradeToXp } from "@/lib/xp";
 import { uploadPhoto } from "@/lib/local-store";
@@ -87,7 +94,7 @@ export default function HomePage() {
   const [isEmblemPickerOpen, setIsEmblemPickerOpen] = useState(false);
   const [selectedEmblemDraft, setSelectedEmblemDraft] = useState<string[]>([]);
   const [isBorderPickerOpen, setIsBorderPickerOpen] = useState(false);
-  const [selectedBorderDraft, setSelectedBorderDraft] = useState<string | null>(null);
+  const [selectedBorderDraft, setSelectedBorderDraft] = useState<string>(serializeAvatarBorderSelection("core", "default"));
   const [historyGradeFilter, setHistoryGradeFilter] = useState<"All" | ClimbRow["grade"]>("All");
   const [historyTagQuery, setHistoryTagQuery] = useState("");
   const [historyVisibleCount, setHistoryVisibleCount] = useState(20);
@@ -419,7 +426,7 @@ export default function HomePage() {
   }
 
   function openBorderPicker() {
-    setSelectedBorderDraft(selectedAvatarBorder);
+    setSelectedBorderDraft(selectedAvatarBorderValue);
     setIsBorderPickerOpen(true);
   }
 
@@ -744,11 +751,11 @@ export default function HomePage() {
     () => normalizeSelectedEmblems(activeProfile?.selected_emblems ?? [], unlockedEmblemIds),
     [activeProfile?.selected_emblems, unlockedEmblemIds]
   );
+  const selectedAvatarBorderValue = activeProfile?.selected_avatar_border ?? serializeAvatarBorderSelection("core", "default");
   const selectedAvatarBorder = useMemo(
-    () => normalizeSelectedAvatarBorder(activeProfile?.selected_avatar_border),
-    [activeProfile?.selected_avatar_border]
+    () => normalizeSelectedAvatarBorder(selectedAvatarBorderValue),
+    [selectedAvatarBorderValue]
   );
-  const currentAvatarFrameTier = useMemo(() => getAvatarFrameTier(stats.level), [stats.level]);
   const selectedFriend = useMemo(
     () => friends.find((friend) => friend.friendId === selectedFriendId) ?? null,
     [friends, selectedFriendId]
@@ -768,7 +775,7 @@ export default function HomePage() {
           name: activeProfile.display_name,
           avatarUrl: activeProfile.avatar_url,
           selectedEmblems,
-          selectedAvatarBorder,
+          selectedAvatarBorder: selectedAvatarBorderValue,
           level: stats.level,
           personalBest: stats.personalBest as Grade,
           recentSends30: recentClimbs.length,
@@ -795,7 +802,7 @@ export default function HomePage() {
     return [selfEntry, ...friendEntries]
       .filter((entry): entry is NonNullable<typeof selfEntry> => Boolean(entry))
       .sort((left, right) => right.score - left.score || right.level - left.level || left.name.localeCompare(right.name));
-  }, [activeProfile, climbs, friends, selectedAvatarBorder, selectedEmblems, stats.level, stats.personalBest]);
+  }, [activeProfile, climbs, friends, selectedAvatarBorderValue, selectedEmblems, stats.level, stats.personalBest]);
   const maxGradeCount = useMemo(
     () => Math.max(1, ...CLIMB_GRADES.map((grade) => stats.completedByGrade[grade] ?? 0)),
     [stats.completedByGrade]
@@ -1243,13 +1250,13 @@ export default function HomePage() {
             <div className="section-title-row">
               <div>
                 <p className="eyebrow">Avatar frame</p>
-                <h2>Choose your color</h2>
+                <h2>Build your frame</h2>
               </div>
               <button className="secondary-button emblem-picker-close" onClick={() => setIsBorderPickerOpen(false)} type="button">
                 Close
               </button>
             </div>
-            <p className="muted emblem-picker-copy">Your frame design upgrades automatically as you level up. Here you just pick the color style.</p>
+            <p className="muted emblem-picker-copy">Choose a frame family, then tint it with a color swatch. Your frame gets more intricate automatically as your level goes up.</p>
             <div className="border-preview-row">
               {renderProfileAvatar(
                 activeProfile?.display_name ?? "You",
@@ -1259,50 +1266,74 @@ export default function HomePage() {
                 stats.level,
                 selectedBorderDraft
               )}
-              <p className="muted border-preview-copy">
-                Current frame: {currentAvatarFrameTier.name} · unlocked at level {currentAvatarFrameTier.unlockLevel}
-              </p>
+              <p className="muted border-preview-copy">Level {stats.level} preview. The design complexity evolves for you over time.</p>
             </div>
-            <div className="emblem-picker-scroll">
+            <div className="emblem-picker-scroll border-picker-scroll">
               <section className="emblem-section">
                 <div className="section-title-row">
                   <div>
-                    <p className="eyebrow">Colors</p>
-                    <h3>Frame palette</h3>
+                    <p className="eyebrow">Designs</p>
+                    <h3>Choose a frame path</h3>
                   </div>
                 </div>
-                <div className="border-grid">
-                  {AVATAR_BORDER_COLORS.map((border) => (
-                    <button
-                      className={clsx("border-card", selectedBorderDraft === border.id && "selected")}
-                      key={border.id}
-                      onClick={() => setSelectedBorderDraft((current) => (current === border.id ? null : border.id))}
-                      type="button"
-                    >
-                      {renderProfileAvatar(
-                        activeProfile?.display_name ?? "You",
-                        activeProfile?.avatar_url ?? null,
-                        selectedEmblems,
-                        "friend-avatar border-preview-avatar",
-                        stats.level,
-                        border.id
-                      )}
-                      <strong>{border.name}</strong>
-                      <span>{border.description}</span>
-                    </button>
-                  ))}
+                <div className="frame-style-grid">
+                  {AVATAR_FRAME_STYLES.map((style) => {
+                    const draft = normalizeSelectedAvatarBorder(selectedBorderDraft);
+                    const borderValue = serializeAvatarBorderSelection(style.id, draft.color);
+                    return (
+                      <button
+                        className={clsx("frame-style-card", draft.style === style.id && "selected")}
+                        key={style.id}
+                        onClick={() => setSelectedBorderDraft(borderValue)}
+                        type="button"
+                      >
+                        {renderProfileAvatar(
+                          activeProfile?.display_name ?? "You",
+                          activeProfile?.avatar_url ?? null,
+                          selectedEmblems,
+                          "friend-avatar border-preview-avatar border-preview-avatar-large",
+                          stats.level,
+                          borderValue
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </section>
               <section className="emblem-section">
                 <div className="section-title-row">
                   <div>
-                    <p className="eyebrow">Progression</p>
-                    <h3>Frame upgrades by level</h3>
+                    <p className="eyebrow">Colors</p>
+                    <h3>Choose a tint</h3>
                   </div>
                 </div>
-                <div className="frame-tier-list">
+                <div className="frame-color-row" role="list" aria-label="Avatar frame colors">
+                  {AVATAR_BORDER_COLORS.map((border) => {
+                    const draft = normalizeSelectedAvatarBorder(selectedBorderDraft);
+                    const borderValue = serializeAvatarBorderSelection(draft.style, border.id);
+                    return (
+                      <button
+                        aria-label={`Select frame color ${border.id}`}
+                        className={clsx("frame-color-swatch", draft.color === border.id && "selected")}
+                        key={border.id}
+                        onClick={() => setSelectedBorderDraft(borderValue)}
+                        style={{ "--swatch-color": border.hex } as React.CSSProperties}
+                        type="button"
+                      />
+                    );
+                  })}
+                </div>
+              </section>
+              <section className="emblem-section">
+                <div className="section-title-row">
+                  <div>
+                    <p className="eyebrow">Evolution</p>
+                    <h3>How your frame grows</h3>
+                  </div>
+                </div>
+                <div className="frame-tier-strip">
                   {AVATAR_FRAME_TIERS.map((tier) => (
-                    <div className={clsx("frame-tier-row", stats.level >= tier.unlockLevel && "unlocked")} key={tier.id}>
+                    <div className={clsx("frame-tier-chip", stats.level >= tier.unlockLevel && "unlocked")} key={tier.id}>
                       {renderProfileAvatar(
                         activeProfile?.display_name ?? "You",
                         activeProfile?.avatar_url ?? null,
@@ -1311,18 +1342,19 @@ export default function HomePage() {
                         tier.unlockLevel,
                         selectedBorderDraft
                       )}
-                      <div>
-                        <strong>{tier.name}</strong>
-                        <span>{tier.unlockLevel === 0 ? "Unlocked by default" : `Unlocks at level ${tier.unlockLevel}`}</span>
-                      </div>
+                      <span>Lv {tier.unlockLevel}</span>
                     </div>
                   ))}
                 </div>
               </section>
             </div>
             <div className="confirm-actions emblem-picker-actions">
-              <button className="secondary-button" onClick={() => setSelectedBorderDraft("default")} type="button">
-                Use default color
+              <button
+                className="secondary-button"
+                onClick={() => setSelectedBorderDraft(serializeAvatarBorderSelection("core", "default"))}
+                type="button"
+              >
+                Reset
               </button>
               <button className="primary-button" disabled={loading} onClick={() => void handleSaveAvatarBorder()} type="button">
                 {activeAction === "avatar" ? "Saving..." : "Save border"}
@@ -1882,7 +1914,7 @@ export default function HomePage() {
                 </div>
 
                 <div className="account-profile-hero">
-                    {renderProfileAvatar(activeProfile.display_name, activeProfile.avatar_url, selectedEmblems, "account-avatar account-avatar-large", stats.level, selectedAvatarBorder)}
+                    {renderProfileAvatar(activeProfile.display_name, activeProfile.avatar_url, selectedEmblems, "account-avatar account-avatar-large", stats.level, selectedAvatarBorderValue)}
                   <div className="account-profile-copy">
                     <strong>{activeProfile.display_name}</strong>
                     <p className="muted">Your photo shows up in Friends and helps your circle recognize you faster.</p>
@@ -2571,16 +2603,18 @@ function renderProfileAvatar(
 ) {
   const normalizedEmblems = (selectedEmblems ?? []).slice(0, 3);
   const frameTier = getAvatarFrameTier(level);
-  const frameColor = normalizeSelectedAvatarBorder(selectedAvatarBorder);
+  const frameConfig = normalizeSelectedAvatarBorder(selectedAvatarBorder);
 
   return (
     <div
       className={clsx(
         "profile-avatar-wrap",
         `avatar-frame-tier-${frameTier.id}`,
-        `avatar-frame-color-${frameColor}`
+        `avatar-frame-style-${frameConfig.style}`,
+        `avatar-frame-color-${frameConfig.color}`
       )}
     >
+      <span aria-hidden="true" className="profile-avatar-accent" />
       {avatarUrl ? <img alt={`${name} profile`} className={clsx(className, "profile-avatar-image")} src={avatarUrl} /> : <div className={className}>{initialsForName(name)}</div>}
       {normalizedEmblems.length > 0 ? (
         <div className="profile-emblem-row">
@@ -2772,3 +2806,4 @@ function renderNavIcon(view: string) {
       return null;
   }
 }
+
