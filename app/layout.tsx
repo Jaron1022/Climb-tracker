@@ -6,11 +6,17 @@ export const metadata: Metadata = {
   title: "Climb Tracker",
   description: "Track climbs, photos, and progress at your gym.",
   manifest: "/manifest.webmanifest",
-  themeColor: "#d86f2d",
+  themeColor: "#8db9ff",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "Climb Tracker"
+  },
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    viewportFit: "cover"
   },
   icons: {
     icon: [

@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Track climbs, photos, and progress at your gym.",
     start_url: "/",
     display: "standalone",
-    background_color: "#f5efe4",
-    theme_color: "#d86f2d",
+    background_color: "#101721",
+    theme_color: "#8db9ff",
     orientation: "portrait",
     icons: [
       {

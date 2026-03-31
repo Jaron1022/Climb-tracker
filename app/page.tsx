@@ -5,7 +5,6 @@ import clsx from "clsx";
 import { CLIMB_COLORS, CLIMB_GRADES, DEFAULT_FORM, STYLE_TAG_GROUPS, climbToXp } from "@/lib/xp";
 import { uploadPhoto } from "@/lib/local-store";
 import {
-  createDemoFriend,
   fetchFriendshipsForUser,
   fetchFriendFeed,
   fetchFriends,
@@ -195,6 +194,18 @@ export default function HomePage() {
   useEffect(() => {
     setHistoryVisibleCount(20);
   }, [historyGradeFilter, historyTagQuery]);
+
+  useEffect(() => {
+    if (!success) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setSuccess("");
+    }, 2400);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [success]);
 
   useEffect(() => {
     if (friends.length === 0) {
@@ -659,21 +670,6 @@ export default function HomePage() {
     }
   }
 
-  async function handleCreateDemoFriend() {
-    try {
-      setLoading(true);
-      setError("");
-      setSuccess("");
-      const demoName = await createDemoFriend();
-      await refreshFriendsView();
-      setSuccess(`${demoName} is ready in your friend feed.`);
-    } catch (err) {
-      setError(getMessage(err));
-    } finally {
-      setLoading(false);
-    }
-  }
-
   function renderHistorySection({
     eyebrow,
     title,
@@ -839,11 +835,7 @@ export default function HomePage() {
         </section>
       ) : null}
 
-      {success ? (
-        <section className="message success status-banner">
-          <strong>Saved:</strong> {success}
-        </section>
-      ) : null}
+        {success ? <section className="message success status-banner">{success}</section> : null}
 
       {selectedPhotoUrl ? (
         <div className="lightbox" onClick={() => setSelectedPhotoUrl(null)} role="button" tabIndex={0}>
@@ -1360,11 +1352,6 @@ export default function HomePage() {
                     <p className="eyebrow">Friends</p>
                     <h2>{friendsTab === "discover" ? "Find climbers" : friendsTab === "requests" ? "Requests" : "Your circle"}</h2>
                   </div>
-                  {friendsTab === "discover" ? (
-                    <button className="secondary-button friend-demo-button" disabled={loading} onClick={() => void handleCreateDemoFriend()} type="button">
-                      Add demo friend
-                    </button>
-                  ) : null}
                 </div>
 
                 <div className="friends-tab-row" role="tablist" aria-label="Friends sections">
@@ -1500,7 +1487,7 @@ export default function HomePage() {
                                     </div>
                                     <p className="muted friend-row-meta">Connected {prettyDate(friend.createdAt)}</p>
                                   </div>
-                                  <span className="friend-row-chevron" aria-hidden="true">
+                                  <span className={clsx("friend-row-chevron", selectedFriendId === friend.friendId && "expanded")} aria-hidden="true">
                                     {selectedFriendId === friend.friendId ? "⌃" : "›"}
                                   </span>
                                 </button>
