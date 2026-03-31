@@ -2374,11 +2374,13 @@ button {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.75rem;
+  align-items: stretch;
 }
 
 .friend-profile-stat {
   display: grid;
   gap: 0.2rem;
+  min-width: 0;
   padding: 0.85rem 0.95rem;
   border-radius: 18px;
   border: 1px solid var(--line);
@@ -3331,6 +3333,7 @@ button {
   }
 
   .friend-profile-stats {
+    display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

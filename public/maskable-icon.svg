@@ -1,6 +1,22 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
-  <rect width="512" height="512" fill="#D86F2D"/>
-  <circle cx="256" cy="256" r="174" fill="#F5EFE4"/>
-  <path d="M157 318C182 258 226 194 294 149C322 173 342 201 357 241C318 261 282 291 254 331C221 353 189 350 157 318Z" fill="#D86F2D"/>
-  <circle cx="331" cy="159" r="27" fill="#8A3F17"/>
+  <defs>
+    <linearGradient id="maskBg" x1="68" y1="40" x2="444" y2="476" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1B2A3E"/>
+      <stop offset="1" stop-color="#091019"/>
+    </linearGradient>
+    <linearGradient id="maskRing" x1="137" y1="103" x2="379" y2="409" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#C8EEFF"/>
+      <stop offset="0.5" stop-color="#75C8FF"/>
+      <stop offset="1" stop-color="#437DE0"/>
+    </linearGradient>
+    <linearGradient id="maskPeak" x1="196" y1="149" x2="323" y2="366" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#8BD3FF"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#maskBg)"/>
+  <circle cx="256" cy="256" r="150" fill="rgba(9,16,25,0.78)" stroke="url(#maskRing)" stroke-width="34"/>
+  <path d="M174 322L239 198C245.76 185.06 264.48 184.61 271.9 197.17L303.14 250.52C308.69 259.98 321.68 260.56 328.11 251.65L357 211L339.44 322H174Z" fill="url(#maskPeak)"/>
+  <circle cx="339" cy="173" r="19" fill="#A7E0FF"/>
+  <circle cx="339" cy="173" r="8.5" fill="#FCFEFF"/>
 </svg>
