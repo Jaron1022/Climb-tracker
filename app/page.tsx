@@ -54,7 +54,6 @@ export default function HomePage() {
   const [displayName, setDisplayName] = useState("");
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signup");
   const [activeView, setActiveView] = useState<"home" | "history" | "friends" | "account" | "progress">("home");
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [accountDisplayName, setAccountDisplayName] = useState("");
   const [form, setForm] = useState(DEFAULT_FORM);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
@@ -135,7 +134,6 @@ export default function HomePage() {
       setEditingClimb(null);
       setIsComposerOpen(false);
       setActiveView("home");
-      setIsMenuOpen(false);
       return;
     }
 
@@ -589,7 +587,6 @@ export default function HomePage() {
 
   function selectView(view: "home" | "history" | "friends" | "account" | "progress") {
     setActiveView(view);
-    setIsMenuOpen(false);
   }
 
   function openHistoryView() {
@@ -1149,16 +1146,6 @@ export default function HomePage() {
       ) : (
         <>
           <header className="app-header">
-            <button
-              aria-expanded={isMenuOpen}
-              className="menu-button"
-              onClick={() => setIsMenuOpen((current) => !current)}
-              type="button"
-            >
-              <span />
-              <span />
-              <span />
-            </button>
             <div>
               <p className="eyebrow">Climb Tracker</p>
               <h2 className="app-header-title">
@@ -1167,35 +1154,13 @@ export default function HomePage() {
                   : activeView === "history"
                     ? "History"
                     : activeView === "friends"
-                      ? "Friends"
-                      : activeView === "account"
-                        ? "Account"
-                        : "Progress"}
+                    ? "Friends"
+                    : activeView === "account"
+                      ? "Account"
+                      : "Progress"}
               </h2>
             </div>
           </header>
-
-          {isMenuOpen ? (
-            <div className="menu-overlay" onClick={() => setIsMenuOpen(false)}>
-              <nav className="menu-panel" onClick={(event) => event.stopPropagation()}>
-                <button className={clsx("menu-link", activeView === "home" && "active")} onClick={() => selectView("home")} type="button">
-                  Dashboard
-                </button>
-                <button className={clsx("menu-link", activeView === "history" && "active")} onClick={() => selectView("history")} type="button">
-                  History
-                </button>
-                <button className={clsx("menu-link", activeView === "friends" && "active")} onClick={() => selectView("friends")} type="button">
-                  Friends
-                </button>
-                <button className={clsx("menu-link", activeView === "progress" && "active")} onClick={() => selectView("progress")} type="button">
-                  Progress
-                </button>
-                <button className={clsx("menu-link", activeView === "account" && "active")} onClick={() => selectView("account")} type="button">
-                  Account
-                </button>
-              </nav>
-            </div>
-          ) : null}
 
           {activeView === "home" ? (
             <>
@@ -1533,12 +1498,10 @@ export default function HomePage() {
                                       <strong>{friend.friendName}</strong>
                                       <span className="friend-level-badge">Lv {friend.level}</span>
                                     </div>
-                                    <p className="muted friend-row-meta">
-                                      Connected {prettyDate(friend.createdAt)} | Tap to view details
-                                    </p>
+                                    <p className="muted friend-row-meta">Connected {prettyDate(friend.createdAt)}</p>
                                   </div>
                                   <span className="friend-row-chevron" aria-hidden="true">
-                                    {selectedFriendId === friend.friendId ? "−" : "+"}
+                                    {selectedFriendId === friend.friendId ? "⌃" : "›"}
                                   </span>
                                 </button>
                                 {selectedFriendId === friend.friendId ? (
@@ -1857,6 +1820,26 @@ export default function HomePage() {
               </section>
             </section>
           ) : null}
+
+          <nav className="bottom-nav" aria-label="Primary navigation">
+            {[
+              { key: "home", label: "Dashboard", shortLabel: "Home" },
+              { key: "history", label: "History", shortLabel: "History" },
+              { key: "friends", label: "Friends", shortLabel: "Friends" },
+              { key: "progress", label: "Progress", shortLabel: "Progress" },
+              { key: "account", label: "Account", shortLabel: "Account" }
+            ].map((item) => (
+              <button
+                key={item.key}
+                className={clsx("bottom-nav-link", activeView === item.key && "active")}
+                onClick={() => selectView(item.key as "home" | "history" | "friends" | "progress" | "account")}
+                type="button"
+              >
+                {renderNavIcon(item.key)}
+                <span>{item.shortLabel}</span>
+              </button>
+            ))}
+          </nav>
         </>
       )}
     </main>
@@ -1924,4 +1907,42 @@ function renderProfileAvatar(name: string, avatarUrl: string | null | undefined,
   }
 
   return <div className={className}>{initialsForName(name)}</div>;
+}
+
+function renderNavIcon(view: string) {
+  switch (view) {
+    case "home":
+      return (
+        <svg aria-hidden="true" className="bottom-nav-icon" viewBox="0 0 24 24">
+          <path d="M4 10.5 12 4l8 6.5v8a1 1 0 0 1-1 1h-4.5v-5h-5v5H5a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
+        </svg>
+      );
+    case "history":
+      return (
+        <svg aria-hidden="true" className="bottom-nav-icon" viewBox="0 0 24 24">
+          <path d="M6 7h12M6 12h12M6 17h12" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+        </svg>
+      );
+    case "friends":
+      return (
+        <svg aria-hidden="true" className="bottom-nav-icon" viewBox="0 0 24 24">
+          <path d="M8 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm8 1a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM4.5 19a4.5 4.5 0 0 1 7 0M13 19a3.8 3.8 0 0 1 6 0" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
+        </svg>
+      );
+    case "progress":
+      return (
+        <svg aria-hidden="true" className="bottom-nav-icon" viewBox="0 0 24 24">
+          <path d="M5 16.5 9.5 12l3 3 6.5-7" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
+          <path d="M5 5v14h14" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
+        </svg>
+      );
+    case "account":
+      return (
+        <svg aria-hidden="true" className="bottom-nav-icon" viewBox="0 0 24 24">
+          <path d="M12 8.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Zm0 3.5 1 .8 1.3-.3.5 1.2 1.3.5-.3 1.3.8 1-.8 1 .3 1.3-1.3.5-.5 1.2-1.3-.3-1 .8-1-.8-1.3.3-.5-1.2-1.3-.5.3-1.3-.8-1 .8-1-.3-1.3 1.3-.5.5-1.2 1.3.3z" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
+        </svg>
+      );
+    default:
+      return null;
+  }
 }

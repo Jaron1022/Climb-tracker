@@ -74,7 +74,7 @@ button {
 }
 
 .shell-dashboard {
-  padding-bottom: 6rem;
+  padding-bottom: 7.5rem;
 }
 
 .app-header {
@@ -89,60 +89,6 @@ button {
   margin: 0.15rem 0 0;
   font-family: "Trebuchet MS", "Gill Sans", sans-serif;
   letter-spacing: -0.03em;
-}
-
-.menu-button {
-  width: 3rem;
-  height: 3rem;
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  background: var(--surface-control);
-  box-shadow: var(--shadow);
-  display: grid;
-  place-items: center;
-  gap: 0.22rem;
-  padding: 0.65rem;
-}
-
-.menu-button span {
-  display: block;
-  width: 100%;
-  height: 2px;
-  border-radius: 999px;
-  background: var(--text);
-}
-
-.menu-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 32;
-  background: rgba(20, 18, 16, 0.24);
-}
-
-.menu-panel {
-  width: min(88vw, 280px);
-  margin: 1rem;
-  padding: 0.75rem;
-  border: 1px solid var(--line);
-  border-radius: 24px;
-  background: var(--surface-strong);
-  box-shadow: var(--shadow-strong);
-  display: grid;
-  gap: 0.45rem;
-}
-
-.menu-link {
-  border: 0;
-  border-radius: 18px;
-  background: transparent;
-  color: var(--text);
-  text-align: left;
-  padding: 0.8rem 0.9rem;
-}
-
-.menu-link.active {
-  background: var(--accent-soft);
-  color: var(--accent-deep);
 }
 
 .dashboard-top {
@@ -508,7 +454,7 @@ button {
   background: color-mix(in srgb, var(--surface-control) 94%, transparent);
   color: var(--accent-deep);
   font-family: "Trebuchet MS", "Gill Sans", sans-serif;
-  font-size: 1.1rem;
+  font-size: 1.25rem;
   line-height: 1;
   transition: transform 140ms ease, border-color 140ms ease, background 140ms ease;
 }
@@ -1115,7 +1061,7 @@ button {
   color: white;
   padding: 0.7rem 1rem;
   font-family: "Trebuchet MS", "Gill Sans", sans-serif;
-  box-shadow: 0 12px 28px rgba(122, 65, 26, 0.22);
+  box-shadow: 0 12px 28px rgba(141, 185, 255, 0.28);
 }
 
 .photo-button-row {
@@ -1639,7 +1585,11 @@ button {
   overflow-y: auto;
   overscroll-behavior: contain;
   touch-action: pan-y;
-  background: var(--surface-strong);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface-strong) 80%, #ffffff),
+    color-mix(in srgb, var(--surface-control-strong) 68%, #eef4fd)
+  );
   border: 1px solid var(--line);
   border-radius: 28px 28px 0 0;
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
@@ -1667,8 +1617,7 @@ button {
       linear-gradient(180deg, #0d1117 0%, #121923 45%, #0f151f 100%);
   }
 
-  .menu-button,
-  .menu-panel,
+  .bottom-nav,
   .hero-card,
   .panel,
   .stat-card,
@@ -1722,6 +1671,19 @@ button {
     background: rgba(188, 74, 74, 0.16);
     color: #ffb4b4;
     border-color: rgba(255, 180, 180, 0.16);
+  }
+
+  .composer-sheet {
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--surface-strong) 86%, #101720),
+      color-mix(in srgb, var(--surface-control-strong) 78%, #121b25)
+    );
+  }
+
+  .bottom-nav {
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--surface-control-strong) 92%, #0f1721), color-mix(in srgb, var(--surface-strong) 96%, #0d141d));
   }
 }
 
@@ -1782,7 +1744,7 @@ button {
 .fab-button {
   position: fixed;
   right: 1rem;
-  bottom: 1rem;
+  bottom: 5.9rem;
   z-index: 20;
   border: 0;
   border-radius: 999px;
@@ -1790,18 +1752,64 @@ button {
   background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 88%, white), color-mix(in srgb, var(--accent) 70%, #315f9c));
   color: white;
   font-family: "Trebuchet MS", "Gill Sans", sans-serif;
-  box-shadow: 0 18px 40px rgba(122, 65, 26, 0.28);
+  box-shadow: 0 18px 40px rgba(141, 185, 255, 0.3);
   transition: transform 150ms ease, box-shadow 150ms ease;
 }
 
 .fab-button:hover,
 .fab-button:focus-visible {
   transform: translateY(-1px) scale(1.02);
-  box-shadow: 0 20px 48px rgba(122, 65, 26, 0.34);
+  box-shadow: 0 20px 48px rgba(141, 185, 255, 0.38);
 }
 
 .save-burst {
   animation: save-glow 800ms ease;
+}
+
+.bottom-nav {
+  position: fixed;
+  left: 50%;
+  bottom: 0.95rem;
+  z-index: 26;
+  transform: translateX(-50%);
+  width: min(calc(100% - 1.2rem), 780px);
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.45rem;
+  padding: 0.55rem;
+  border: 1px solid var(--line);
+  border-radius: 26px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-control-strong) 96%, white), color-mix(in srgb, var(--surface) 94%, #eef4fd));
+  box-shadow: var(--shadow-strong);
+  backdrop-filter: blur(16px);
+}
+
+.bottom-nav-link {
+  border: 0;
+  border-radius: 18px;
+  background: transparent;
+  color: var(--muted);
+  padding: 0.55rem 0.35rem;
+  display: grid;
+  justify-items: center;
+  gap: 0.22rem;
+  text-align: center;
+}
+
+.bottom-nav-link.active {
+  background: var(--accent-soft);
+  color: var(--accent-deep);
+}
+
+.bottom-nav-link span {
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.bottom-nav-icon {
+  width: 1.35rem;
+  height: 1.35rem;
 }
 
 .onboarding-panel {
@@ -1872,6 +1880,26 @@ button {
     width: 100%;
     left: 0;
     transform: none;
+  }
+
+  .bottom-nav {
+    width: calc(100% - 0.8rem);
+    bottom: 0.4rem;
+    padding: 0.45rem;
+    gap: 0.2rem;
+  }
+
+  .bottom-nav-link {
+    padding: 0.48rem 0.2rem;
+  }
+
+  .bottom-nav-link span {
+    font-size: 0.7rem;
+  }
+
+  .fab-button {
+    right: 0.8rem;
+    bottom: 5.5rem;
   }
 
   .trend-graph-shell {
