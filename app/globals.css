@@ -53,11 +53,21 @@ body {
   min-height: 100vh;
   font-family: Georgia, "Times New Roman", serif;
   color: var(--text);
+  position: relative;
+  background: var(--bg);
+  transition: background 200ms ease, color 200ms ease;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
   background:
     radial-gradient(circle at top, rgba(141, 185, 255, 0.34), transparent 28%),
     radial-gradient(circle at bottom right, rgba(103, 145, 214, 0.14), transparent 26%),
     linear-gradient(180deg, #e6eefb 0%, #eef3fb 46%, #dde7f5 100%);
-  transition: background 200ms ease, color 200ms ease;
 }
 
 button,
@@ -3111,6 +3121,10 @@ button {
 
 @media (prefers-color-scheme: dark) {
   body {
+    background: var(--bg);
+  }
+
+  body::before {
     background:
       radial-gradient(circle at top, rgba(156, 198, 255, 0.24), transparent 24%),
       radial-gradient(circle at top right, rgba(156, 198, 255, 0.12), transparent 20%),
