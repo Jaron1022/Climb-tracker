@@ -63,17 +63,17 @@ export const DEFAULT_FORM: ClimbForm = {
 
 const XP_BY_GRADE: Record<Grade, number> = {
   VB: 1,
-  V0: 10,
-  V1: 15,
-  V2: 23,
-  V3: 35,
-  V4: 60,
-  V5: 96,
-  V6: 150,
-  V7: 230,
-  V8: 345,
-  V9: 515,
-  V10: 770
+  V0: 2,
+  V1: 4,
+  V2: 8,
+  V3: 15,
+  V4: 31,
+  V5: 63,
+  V6: 125,
+  V7: 251,
+  V8: 501,
+  V9: 794,
+  V10: 1000
 };
 
 export const GRADE_MODIFIER_MULTIPLIERS: Record<Exclude<GradeModifier, null>, number> = {
