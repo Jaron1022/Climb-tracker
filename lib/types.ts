@@ -162,6 +162,5 @@ export type ClimbForm = {
   styleTags: StyleTag[];
   color: string;
   notes: string;
-  sessionNote: string;
   date: string;
 };

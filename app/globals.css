@@ -764,6 +764,10 @@ button {
   margin-top: 0.15rem;
 }
 
+.session-note-trigger {
+  flex-shrink: 0;
+}
+
 .kudos-button {
   display: inline-flex;
   align-items: center;
@@ -2672,6 +2676,12 @@ button {
   gap: 0.45rem;
 }
 
+.inbox-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+}
+
 .friend-profile-avatar {
   width: 5.4rem;
   height: 5.4rem;
@@ -3687,6 +3697,19 @@ button {
 .helper-copy {
   margin-top: 0;
   margin-bottom: 1rem;
+}
+
+.session-note-modal {
+  width: min(100%, 34rem);
+  display: grid;
+  gap: 0.9rem;
+}
+
+.session-note-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
 .fab-button {

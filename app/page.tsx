@@ -96,7 +96,7 @@ export default function HomePage() {
   const [booting, setBooting] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [activeAction, setActiveAction] = useState<"auth" | "rename" | "avatar" | "emblems" | "theme" | "logout" | "account-delete" | "password-reset" | "password-update" | "climb" | "edit" | "project" | "project-work" | "project-delete" | "load" | "delete" | "">("");
+  const [activeAction, setActiveAction] = useState<"auth" | "rename" | "avatar" | "emblems" | "theme" | "logout" | "account-delete" | "password-reset" | "password-update" | "climb" | "edit" | "project" | "project-work" | "project-delete" | "session-note" | "load" | "delete" | "">("");
   const [selectedPhotoUrl, setSelectedPhotoUrl] = useState<string | null>(null);
   const [climbPendingDelete, setClimbPendingDelete] = useState<ClimbRow | null>(null);
   const [editingClimb, setEditingClimb] = useState<ClimbRow | null>(null);
@@ -105,6 +105,9 @@ export default function HomePage() {
   const [projectPendingSend, setProjectPendingSend] = useState<ProjectRow | null>(null);
   const [showSaveBurst, setShowSaveBurst] = useState(false);
   const [isXpInfoOpen, setIsXpInfoOpen] = useState(false);
+  const [isSessionNoteOpen, setIsSessionNoteOpen] = useState(false);
+  const [sessionNoteDate, setSessionNoteDate] = useState("");
+  const [sessionNoteDraft, setSessionNoteDraft] = useState("");
   const [isEmblemPickerOpen, setIsEmblemPickerOpen] = useState(false);
   const [selectedEmblemDraft, setSelectedEmblemDraft] = useState<string[]>([]);
   const [selectedThemeDraft, setSelectedThemeDraft] = useState("sky");
@@ -121,6 +124,7 @@ export default function HomePage() {
   const [sessionKudosById, setSessionKudosById] = useState<Record<string, SessionKudosSummary>>({});
   const [receivedSessionKudosByDate, setReceivedSessionKudosByDate] = useState<Record<string, number>>({});
   const [receivedKudosInbox, setReceivedKudosInbox] = useState<ReceivedKudosInboxItem[]>([]);
+  const [seenInboxItemIds, setSeenInboxItemIds] = useState<string[]>([]);
   const [friendFeedVisibleCount, setFriendFeedVisibleCount] = useState(20);
   const [expandedFriendSessionId, setExpandedFriendSessionId] = useState("");
   const [activeKudosSessionId, setActiveKudosSessionId] = useState("");
@@ -209,6 +213,7 @@ export default function HomePage() {
       setFriendSessionNotesById({});
       setReceivedSessionKudosByDate({});
       setReceivedKudosInbox([]);
+      setSeenInboxItemIds([]);
       setPendingOutgoingFriendIds([]);
       setEditingClimb(null);
       setIsComposerOpen(false);
@@ -753,17 +758,6 @@ export default function HomePage() {
       } else {
         await saveClimbForUser(activeProfileId, climbPayload);
       }
-      await saveSessionNoteForUser(activeProfileId, form.date, form.sessionNote);
-      setSessionNotesByDate((current) => {
-        const next = { ...current };
-        const trimmed = form.sessionNote.trim();
-        if (trimmed) {
-          next[form.date] = trimmed;
-        } else {
-          delete next[form.date];
-        }
-        return next;
-      });
       if (projectPendingSend) {
         await deleteProjectForUser(activeProfileId, projectPendingSend.id);
         setProjectPendingSend(null);
@@ -784,43 +778,6 @@ export default function HomePage() {
       setShowSaveBurst(true);
       window.setTimeout(() => setShowSaveBurst(false), 1600);
       setSuccess(editingClimb ? "Climb updated." : "Climb logged.");
-    } catch (err) {
-      setError(getMessage(err));
-    } finally {
-      setLoading(false);
-      setActiveAction("");
-    }
-  }
-
-  async function handleDemoAccountSignIn() {
-    try {
-      setLoading(true);
-      setActiveAction("auth");
-      setError("");
-      setSuccess("");
-
-      const response = await fetch("/api/demo-account", {
-        method: "POST"
-      });
-      const payload = (await response.json()) as {
-        ok?: boolean;
-        email?: string;
-        password?: string;
-        error?: string;
-      };
-
-      if (!response.ok || !payload.email || !payload.password) {
-        throw new Error(payload.error || "Could not prepare the demo account.");
-      }
-
-      const user = await signInWithEmail(payload.email, payload.password);
-      setCurrentUserEmail(user.email ?? "");
-      await syncUserData(user.id);
-      setAuthMode("signin");
-      setEmail("");
-      setPassword("");
-      setDisplayName("");
-      setSuccess("Signed into the demo account.");
     } catch (err) {
       setError(getMessage(err));
     } finally {
@@ -951,11 +908,7 @@ export default function HomePage() {
   function openComposer() {
     setEditingClimb(null);
     setProjectPendingSend(null);
-    const nextForm = createDefaultForm();
-    setForm({
-      ...nextForm,
-      sessionNote: sessionNotesByDate[nextForm.date] ?? ""
-    });
+    setForm(createDefaultForm());
     setPhotoFile(null);
     if (photoInputRef.current) {
       photoInputRef.current.value = "";
@@ -990,7 +943,6 @@ export default function HomePage() {
       styleTags: climb.style_tags,
       color: climb.wall_name ?? "",
       notes: climb.notes ?? "",
-      sessionNote: sessionNotesByDate[climb.climbed_on] ?? "",
       date: climb.climbed_on
     });
     setPhotoFile(null);
@@ -1013,7 +965,6 @@ export default function HomePage() {
       styleTags: project.style_tags,
       color: project.wall_name ?? "",
       notes: project.notes ?? "",
-      sessionNote: sessionNotesByDate[formatLocalDateKey(new Date())] ?? "",
       date: formatLocalDateKey(new Date())
     });
     setPhotoFile(null);
@@ -1165,7 +1116,20 @@ export default function HomePage() {
       ].sort((left, right) => right.createdAt.localeCompare(left.createdAt)),
     [incomingRequests, receivedKudosInbox]
   );
+  const unreadInboxCount = useMemo(
+    () => inboxItems.filter((item) => !seenInboxItemIds.includes(item.id)).length,
+    [inboxItems, seenInboxItemIds]
+  );
   const canSaveClimb = Boolean(activeProfileId) && !loading && !booting;
+
+  useEffect(() => {
+    if (!isInboxOpen || inboxItems.length === 0) {
+      return;
+    }
+
+    setSeenInboxItemIds((current) => Array.from(new Set([...current, ...inboxItems.map((item) => item.id)])));
+  }, [inboxItems, isInboxOpen]);
+
   const selectedGradeCounts = progressRange === "ALL" ? stats.completedByGrade : progressStats.completedByGrade;
   const selectedGradeMax = useMemo(
     () => Math.max(1, ...CLIMB_GRADES.map((grade) => selectedGradeCounts[grade] ?? 0)),
@@ -1218,6 +1182,46 @@ export default function HomePage() {
   function clearHistoryFilters() {
     setHistoryGradeFilter("All");
     setHistoryTagQuery("");
+  }
+
+  function openSessionNoteEditor(sessionOn: string) {
+    setSessionNoteDate(sessionOn);
+    setSessionNoteDraft(sessionNotesByDate[sessionOn] ?? "");
+    setIsSessionNoteOpen(true);
+    setError("");
+    setSuccess("");
+  }
+
+  async function handleSessionNoteSave() {
+    if (!activeProfileId || !sessionNoteDate) {
+      return;
+    }
+
+    const trimmed = sessionNoteDraft.trim();
+
+    try {
+      setLoading(true);
+      setActiveAction("session-note");
+      setError("");
+      setSuccess("");
+      await saveSessionNoteForUser(activeProfileId, sessionNoteDate, trimmed);
+      setSessionNotesByDate((current) => {
+        const next = { ...current };
+        if (trimmed) {
+          next[sessionNoteDate] = trimmed;
+        } else {
+          delete next[sessionNoteDate];
+        }
+        return next;
+      });
+      setIsSessionNoteOpen(false);
+      setSuccess(trimmed ? "Session note saved." : "Session note removed.");
+    } catch (err) {
+      setError(getMessage(err));
+    } finally {
+      setLoading(false);
+      setActiveAction("");
+    }
   }
 
   function renderHistorySessionsSection() {
@@ -1273,6 +1277,9 @@ export default function HomePage() {
                         <p className="eyebrow">{prettyDate(session.climbedOn)}</p>
                         <h3>{session.headline}</h3>
                       </div>
+                      <button className="text-button session-note-trigger" onClick={() => openSessionNoteEditor(session.climbedOn)} type="button">
+                        {session.note ? "Edit note" : "Add note"}
+                      </button>
                     </div>
                     <div className="tag-row friend-session-summary">
                       <span className="mini-badge">{session.sendCount} sends</span>
@@ -1663,6 +1670,44 @@ export default function HomePage() {
           </div>
         </section>
       ) : null}
+      {isSessionNoteOpen ? (
+        <section className="lightbox friend-profile-overlay" aria-label="Session note" role="dialog">
+          <div className="panel friend-profile-modal session-note-modal">
+            <button className="secondary-button inbox-close" onClick={() => setIsSessionNoteOpen(false)} type="button">
+              Close
+            </button>
+            <div className="section-title-row">
+              <div>
+                <p className="eyebrow">Session note</p>
+                <h2>{prettyDate(sessionNoteDate)}</h2>
+              </div>
+            </div>
+            <p className="muted helper-copy">Capture how the session felt, what clicked, or what you want to remember next time.</p>
+            <label className="field">
+              <span>Note</span>
+              <textarea
+                placeholder="Energy, beta, who you climbed with, what changed, what still feels close..."
+                rows={5}
+                value={sessionNoteDraft}
+                onChange={(event) => setSessionNoteDraft(event.target.value)}
+              />
+            </label>
+            <div className="session-note-actions">
+              <button className="secondary-button" onClick={() => setIsSessionNoteOpen(false)} type="button">
+                Cancel
+              </button>
+              <button
+                className="primary-button"
+                disabled={loading && activeAction === "session-note"}
+                onClick={() => void handleSessionNoteSave()}
+                type="button"
+              >
+                {loading && activeAction === "session-note" ? "Saving note..." : sessionNoteDraft.trim() ? "Save note" : "Clear note"}
+              </button>
+            </div>
+          </div>
+        </section>
+      ) : null}
       {isEmblemPickerOpen ? (
         <section className="lightbox emblem-picker-overlay" aria-label="Select emblems" role="dialog">
           <div className="panel emblem-picker-modal">
@@ -1845,7 +1890,7 @@ export default function HomePage() {
       {isInboxOpen ? (
         <section className="lightbox friend-profile-overlay" aria-label="Inbox" role="dialog">
           <div className="panel friend-profile-modal inbox-modal">
-            <button className="lightbox-close" onClick={() => setIsInboxOpen(false)} type="button">
+            <button className="secondary-button inbox-close" onClick={() => setIsInboxOpen(false)} type="button">
               Close
             </button>
             <div className="section-title-row">
@@ -2099,13 +2144,7 @@ export default function HomePage() {
                 <input
                   type="date"
                   value={form.date}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      date: event.target.value,
-                      sessionNote: sessionNotesByDate[event.target.value] ?? ""
-                    }))
-                  }
+                  onChange={(event) => setForm((current) => ({ ...current, date: event.target.value }))}
                 />
               </label>
 
@@ -2155,16 +2194,6 @@ export default function HomePage() {
                   rows={4}
                   value={form.notes}
                   onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))}
-                />
-              </label>
-
-              <label className="field">
-                <span>Session note</span>
-                <textarea
-                  placeholder="One note for the whole day: energy, beta, who you climbed with, what to remember next time..."
-                  rows={3}
-                  value={form.sessionNote}
-                  onChange={(event) => setForm((current) => ({ ...current, sessionNote: event.target.value }))}
                 />
               </label>
 
@@ -2441,9 +2470,6 @@ export default function HomePage() {
                 {activeAction === "password-reset" ? "Sending reset email..." : "Forgot password?"}
               </button>
             ) : null}
-            <button className="secondary-button" disabled={loading} onClick={() => void handleDemoAccountSignIn()} type="button">
-              {activeAction === "auth" && loading ? "Preparing demo..." : "Use demo account"}
-            </button>
           </form>
         </section>
       ) : (
@@ -2463,10 +2489,10 @@ export default function HomePage() {
                       : "Progress"}
               </h2>
             </div>
-            {activeProfile ? (
+            {activeProfile && activeView === "home" ? (
               <button className="secondary-button inbox-button" onClick={() => setIsInboxOpen(true)} type="button">
                 Inbox
-                {inboxCount > 0 ? <span className="friends-tab-count">{inboxCount}</span> : null}
+                {unreadInboxCount > 0 ? <span className="friends-tab-count">{unreadInboxCount}</span> : null}
               </button>
             ) : null}
           </header>
@@ -2513,6 +2539,15 @@ export default function HomePage() {
                       <p className="eyebrow">Daily recap</p>
                       <h2>{progressStats.dailyRecap?.headline ?? "No session logged yet"}</h2>
                     </div>
+                    {progressStats.dailyRecap ? (
+                      <button
+                        className="text-button session-note-trigger"
+                        onClick={() => openSessionNoteEditor(progressStats.dailyRecap!.climbedOn)}
+                        type="button"
+                      >
+                        {progressStats.dailyRecap.sessionNote ? "Edit note" : "Add note"}
+                      </button>
+                    ) : null}
                   </div>
 
                   {progressStats.dailyRecap ? (
