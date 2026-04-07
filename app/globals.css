@@ -641,6 +641,15 @@ button {
   grid-row: 1 / span 2;
 }
 
+.friend-session-collage.is-four {
+  grid-template-columns: 1.3fr 1fr;
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+}
+
+.friend-session-collage.is-four .friend-session-collage-image:first-child {
+  grid-row: 1 / span 2;
+}
+
 .friend-session-summary {
   margin-bottom: 0.2rem;
 }

@@ -2782,6 +2782,7 @@ function buildFriendSessions(climbs: FriendFeedClimb[]) {
     .map((session) => ({
       ...session,
       headline: `${session.sendCount} sends`,
+      photoUrls: buildSessionPhotoCollage(session.climbs),
       climbs: session.climbs.slice().sort((left, right) => climbSortScore(right) - climbSortScore(left))
     }))
     .sort((left, right) => {
@@ -2791,6 +2792,34 @@ function buildFriendSessions(climbs: FriendFeedClimb[]) {
 
       return left.friendName.localeCompare(right.friendName);
     });
+}
+
+function buildSessionPhotoCollage(climbs: FriendFeedClimb[]) {
+  const rankedPhotos = climbs
+    .filter((climb): climb is FriendFeedClimb & { photo_url: string } => Boolean(climb.photo_url))
+    .slice()
+    .sort((left, right) => sessionPhotoScore(right) - sessionPhotoScore(left));
+
+  const uniquePhotos: string[] = [];
+  rankedPhotos.forEach((climb) => {
+    if (uniquePhotos.length >= 4) {
+      return;
+    }
+
+    if (!uniquePhotos.includes(climb.photo_url)) {
+      uniquePhotos.push(climb.photo_url);
+    }
+  });
+
+  return uniquePhotos;
+}
+
+function sessionPhotoScore(climb: FriendFeedClimb) {
+  const base = climbSortScore(climb) * 100;
+  const noteBonus = climb.notes ? 12 : 0;
+  const flashBonus = climb.flashed ? 6 : 0;
+  const colorBonus = climb.wall_name ? 2 : 0;
+  return base + noteBonus + flashBonus + colorBonus;
 }
 
 function climbSortScore(climb: Pick<ClimbRow, "grade" | "grade_modifier" | "flashed">) {
