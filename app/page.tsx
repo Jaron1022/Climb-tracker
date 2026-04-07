@@ -2155,21 +2155,33 @@ export default function HomePage() {
 
                               return (
                                 <article className="climb-card friend-session-card" key={session.id}>
-                                  {session.photoUrl ? (
-                                    <button className="thumbnail-button" onClick={() => setSelectedPhotoUrl(session.photoUrl)} type="button">
-                                      <img alt={`${session.friendName} climbing session`} className="climb-photo" src={session.photoUrl} />
+                                  {session.photoUrls.length > 0 ? (
+                                    <button
+                                      className={clsx(
+                                        "friend-session-preview",
+                                        session.photoUrls.length > 1 && "friend-session-collage",
+                                        session.photoUrls.length === 2 && "is-two",
+                                        session.photoUrls.length === 3 && "is-three",
+                                        session.photoUrls.length >= 4 && "is-four"
+                                      )}
+                                      onClick={() => setSelectedPhotoUrl(session.photoUrls[0])}
+                                      type="button"
+                                    >
+                                      {session.photoUrls.map((photoUrl, index) => (
+                                        <img
+                                          alt={`${session.friendName} climbing session ${index + 1}`}
+                                          className="friend-session-collage-image"
+                                          key={`${session.id}-${photoUrl}`}
+                                          src={photoUrl}
+                                        />
+                                      ))}
                                     </button>
                                   ) : null}
                                   <div className="climb-content">
                                     <div className="section-title-row">
                                       <div>
                                         <p className="eyebrow">{session.friendName}</p>
-                                        <div className="history-title-row">
-                                          <h3>{session.headline}</h3>
-                                          {session.topColor ? (
-                                            <span className={clsx("history-description", getColorChipClass(session.topColor))}>{session.topColor}</span>
-                                          ) : null}
-                                        </div>
+                                        <h3>{session.headline}</h3>
                                         <p className="muted history-meta">{prettyDate(session.climbedOn)}</p>
                                       </div>
                                     </div>
@@ -2188,31 +2200,53 @@ export default function HomePage() {
                                     </button>
                                     {isExpanded ? (
                                       <div className="friend-session-climb-list">
-                                        {session.climbs.map((climb) => (
-                                          <div className="friend-session-climb-row" key={climb.id}>
-                                            <div>
-                                              <div className="history-title-row">
-                                                <strong>
-                                                  {climb.grade}
-                                                  {climb.grade_modifier ?? ""}
-                                                </strong>
-                                                {climb.wall_name ? (
-                                                  <span className={clsx("history-description", getColorChipClass(climb.wall_name))}>{climb.wall_name}</span>
-                                                ) : null}
+                                        {session.climbs.map((climb) =>
+                                          climb.photo_url ? (
+                                            <button
+                                              className="friend-session-climb-row is-clickable"
+                                              key={climb.id}
+                                              onClick={() => setSelectedPhotoUrl(climb.photo_url)}
+                                              type="button"
+                                            >
+                                              <div>
+                                                <div className="history-title-row">
+                                                  <strong>
+                                                    {climb.grade}
+                                                    {climb.grade_modifier ?? ""}
+                                                  </strong>
+                                                  {climb.wall_name ? (
+                                                    <span className={clsx("history-description", getColorChipClass(climb.wall_name))}>{climb.wall_name}</span>
+                                                  ) : null}
+                                                  {climb.flashed ? <span className="mini-badge ready">flash</span> : null}
+                                                </div>
+                                                {climb.notes ? <p className="muted friend-session-note">{climb.notes}</p> : null}
                                               </div>
-                                              <div className="tag-row">
-                                                {climb.flashed ? <span className="mini-badge ready">flash</span> : null}
-                                                {climb.style_tags.map((tag) => (
-                                                  <span className="mini-badge" key={tag}>
-                                                    {tag}
-                                                  </span>
-                                                ))}
+                                              <div className="friend-session-climb-aside">
+                                                <span className="xp-line">+{climbToXp(climb.grade, Boolean(climb.flashed), climb.grade_modifier ?? null)} XP</span>
+                                                <span className="friend-session-photo-hint">Photo</span>
                                               </div>
-                                              {climb.notes ? <p className="muted friend-session-note">{climb.notes}</p> : null}
+                                            </button>
+                                          ) : (
+                                            <div className="friend-session-climb-row" key={climb.id}>
+                                              <div>
+                                                <div className="history-title-row">
+                                                  <strong>
+                                                    {climb.grade}
+                                                    {climb.grade_modifier ?? ""}
+                                                  </strong>
+                                                  {climb.wall_name ? (
+                                                    <span className={clsx("history-description", getColorChipClass(climb.wall_name))}>{climb.wall_name}</span>
+                                                  ) : null}
+                                                  {climb.flashed ? <span className="mini-badge ready">flash</span> : null}
+                                                </div>
+                                                {climb.notes ? <p className="muted friend-session-note">{climb.notes}</p> : null}
+                                              </div>
+                                              <div className="friend-session-climb-aside">
+                                                <span className="xp-line">+{climbToXp(climb.grade, Boolean(climb.flashed), climb.grade_modifier ?? null)} XP</span>
+                                              </div>
                                             </div>
-                                            <span className="xp-line">+{climbToXp(climb.grade, Boolean(climb.flashed), climb.grade_modifier ?? null)} XP</span>
-                                          </div>
-                                        ))}
+                                          )
+                                        )}
                                       </div>
                                     ) : null}
                                   </div>
@@ -2694,8 +2728,7 @@ function buildFriendSessions(climbs: FriendFeedClimb[]) {
       friendId: string;
       friendName: string;
       climbedOn: string;
-      photoUrl: string | null;
-      topColor: string | null;
+      photoUrls: string[];
       hardestLabel: string;
       headline: string;
       sendCount: number;
@@ -2718,8 +2751,7 @@ function buildFriendSessions(climbs: FriendFeedClimb[]) {
         friendId,
         friendName: climb.friend_name,
         climbedOn: climb.climbed_on,
-        photoUrl: climb.photo_url ?? null,
-        topColor: climb.wall_name ?? null,
+        photoUrls: climb.photo_url ? [climb.photo_url] : [],
         hardestLabel: `${climb.grade}${climb.grade_modifier ?? ""}`,
         headline: `${climb.grade}${climb.grade_modifier ?? ""} session`,
         sendCount: 1,
@@ -2736,14 +2768,13 @@ function buildFriendSessions(climbs: FriendFeedClimb[]) {
     current.totalXp += climbToXp(climb.grade, Boolean(climb.flashed), climb.grade_modifier ?? null);
     current.climbs.push(climb);
 
-    if (!current.photoUrl && climb.photo_url) {
-      current.photoUrl = climb.photo_url;
+    if (climb.photo_url && !current.photoUrls.includes(climb.photo_url) && current.photoUrls.length < 4) {
+      current.photoUrls.push(climb.photo_url);
     }
 
     if (climbSort > current.bestSort) {
       current.bestSort = climbSort;
       current.hardestLabel = `${climb.grade}${climb.grade_modifier ?? ""}`;
-      current.topColor = climb.wall_name ?? current.topColor;
     }
   });
 

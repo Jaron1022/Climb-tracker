@@ -598,6 +598,49 @@ button {
   display: grid;
 }
 
+.friend-session-preview {
+  display: block;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.friend-session-preview:not(.friend-session-collage) {
+  aspect-ratio: 16 / 10;
+}
+
+.friend-session-preview img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.friend-session-collage {
+  display: grid;
+  gap: 0.18rem;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--surface-control) 94%, transparent);
+}
+
+.friend-session-collage.is-two,
+.friend-session-collage.is-four {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.friend-session-collage.is-three {
+  grid-template-columns: 1.35fr 1fr;
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+}
+
+.friend-session-collage.is-three .friend-session-collage-image:first-child {
+  grid-row: 1 / span 2;
+}
+
 .friend-session-summary {
   margin-bottom: 0.2rem;
 }
@@ -620,6 +663,44 @@ button {
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 0.8rem;
   align-items: start;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--line) 86%, transparent);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--surface-control) 94%, transparent);
+}
+
+.friend-session-climb-row.is-clickable {
+  width: 100%;
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, var(--line));
+  text-align: left;
+  cursor: pointer;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+}
+
+.friend-session-climb-row.is-clickable:hover,
+.friend-session-climb-row.is-clickable:focus-visible {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--line));
+  background: color-mix(in srgb, var(--surface-control) 88%, var(--accent-soft));
+  box-shadow: var(--shadow);
+}
+
+.friend-session-climb-row.is-clickable:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 52%, transparent);
+  outline-offset: 2px;
+}
+
+.friend-session-climb-aside {
+  display: grid;
+  justify-items: end;
+  gap: 0.35rem;
+}
+
+.friend-session-photo-hint {
+  color: var(--muted);
+  font-size: 0.76rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .friend-session-note {
