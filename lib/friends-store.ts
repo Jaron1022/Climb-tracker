@@ -295,6 +295,23 @@ export async function toggleSessionKudos(userId: string, recipientId: string, cl
   }
 }
 
+export async function fetchReceivedSessionKudos(userId: string) {
+  const supabase = getSupabaseBrowserClient() as any;
+  const { data, error } = await supabase
+    .from("session_kudos")
+    .select("climbed_on")
+    .eq("recipient_id", userId);
+
+  if (error) {
+    throw error;
+  }
+
+  return ((data ?? []) as Array<{ climbed_on: string }>).reduce<Record<string, number>>((accumulator, row) => {
+    accumulator[row.climbed_on] = (accumulator[row.climbed_on] ?? 0) + 1;
+    return accumulator;
+  }, {});
+}
+
 export function buildLeaderboardScore(weeklyXp7: number, activeDays7: number) {
   return sumLeaderboardScoreBreakdown(getLeaderboardScoreBreakdown(weeklyXp7, activeDays7));
 }

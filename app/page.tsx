@@ -9,6 +9,7 @@ import { uploadPhoto } from "@/lib/local-store";
 import {
   buildLeaderboardScore,
   fetchSessionKudos,
+  fetchReceivedSessionKudos,
   getLeaderboardScoreBreakdown,
   fetchFriendshipsForUser,
   fetchFriendFeed,
@@ -100,11 +101,12 @@ export default function HomePage() {
   const [friends, setFriends] = useState<FriendSummary[]>([]);
   const [friendFeed, setFriendFeed] = useState<FriendFeedClimb[]>([]);
   const [sessionKudosById, setSessionKudosById] = useState<Record<string, SessionKudosSummary>>({});
+  const [receivedSessionKudosByDate, setReceivedSessionKudosByDate] = useState<Record<string, number>>({});
   const [friendFeedVisibleCount, setFriendFeedVisibleCount] = useState(20);
   const [expandedFriendSessionId, setExpandedFriendSessionId] = useState("");
   const [activeKudosSessionId, setActiveKudosSessionId] = useState("");
   const [pendingOutgoingFriendIds, setPendingOutgoingFriendIds] = useState<string[]>([]);
-  const [friendsTab, setFriendsTab] = useState<"discover" | "requests" | "circle" | "leaderboard">("circle");
+  const [friendsTab, setFriendsTab] = useState<"discover" | "requests" | "circle" | "feed" | "leaderboard">("circle");
   const [expandedLeaderboardId, setExpandedLeaderboardId] = useState("");
   const [progressRange, setProgressRange] = useState<ProgressRange>("ALL");
   const [isLandscapePhone, setIsLandscapePhone] = useState(false);
@@ -171,6 +173,7 @@ export default function HomePage() {
       setFriends([]);
       setFriendFeed([]);
       setSessionKudosById({});
+      setReceivedSessionKudosByDate({});
       setPendingOutgoingFriendIds([]);
       setEditingClimb(null);
       setIsComposerOpen(false);
@@ -185,6 +188,16 @@ export default function HomePage() {
 
     const profileClimbs = await fetchClimbsForUser(userId);
     setClimbs(profileClimbs);
+    try {
+      const receivedKudos = await fetchReceivedSessionKudos(userId);
+      setReceivedSessionKudosByDate(receivedKudos);
+    } catch (err) {
+      const message = getMessage(err).toLowerCase();
+      if (!message.includes("session_kudos")) {
+        throw err;
+      }
+      setReceivedSessionKudosByDate({});
+    }
     await hydrateFriendState(userId);
   }, [hydrateFriendState]);
 
@@ -756,6 +769,7 @@ export default function HomePage() {
 
   const stats = useMemo(() => buildStats(climbs), [climbs]);
   const progressStats = useMemo(() => buildProgressStats(climbs, progressRange), [climbs, progressRange]);
+  const dailyRecapKudosCount = progressStats.dailyRecap ? receivedSessionKudosByDate[progressStats.dailyRecap.climbedOn] ?? 0 : 0;
   const unlockedEmblems = useMemo(() => getUnlockedEmblems(climbs), [climbs]);
   const unlockedEmblemIds = useMemo(() => unlockedEmblems.map((emblem) => emblem.id), [unlockedEmblems]);
   const lockedEmblems = useMemo(
@@ -843,6 +857,19 @@ export default function HomePage() {
   const visibleHistoryClimbs = filteredClimbs.slice(0, historyVisibleCount);
   const hasMoreHistory = filteredClimbs.length > historyVisibleCount;
   const friendSessions = useMemo(() => buildFriendSessions(friendFeed, sessionKudosById), [friendFeed, sessionKudosById]);
+  const friendLookup = useMemo(
+    () =>
+      new Map(
+        friends.map((friend) => [
+          friend.friendId,
+          {
+            avatarUrl: friend.avatarUrl,
+            selectedEmblems: friend.selectedEmblems
+          }
+        ])
+      ),
+    [friends]
+  );
   const visibleFriendFeed = friendSessions.slice(0, friendFeedVisibleCount);
   const hasMoreFriendFeed = friendSessions.length > friendFeedVisibleCount;
   const canSaveClimb = Boolean(activeProfileId) && !loading && !booting;
@@ -1797,6 +1824,7 @@ export default function HomePage() {
                         <span className="daily-pill">{progressStats.dailyRecap.sends} sends</span>
                         <span className="daily-pill">+{progressStats.dailyRecap.totalXp} XP</span>
                         {progressStats.dailyRecap.topGrade ? <span className="daily-pill">Top send {progressStats.dailyRecap.topGrade}</span> : null}
+                        {dailyRecapKudosCount > 0 ? <span className="daily-pill daily-pill-kudos">{dailyRecapKudosCount} kudos</span> : null}
                       </div>
                       <div className="daily-recap-list">
                         {progressStats.dailyRecap.groups.map((group) => (
@@ -1980,6 +2008,8 @@ export default function HomePage() {
                         ? "Find climbers"
                         : friendsTab === "requests"
                           ? "Requests"
+                          : friendsTab === "feed"
+                            ? "Friend feed"
                           : friendsTab === "leaderboard"
                             ? "Leaderboard"
                             : "Your circle"}
@@ -1998,6 +2028,10 @@ export default function HomePage() {
                   <button className={clsx("friends-tab", friendsTab === "circle" && "active")} onClick={() => setFriendsTab("circle")} type="button">
                     Circle
                     <span className="friends-tab-count">{friends.length}</span>
+                  </button>
+                  <button className={clsx("friends-tab", friendsTab === "feed" && "active")} onClick={() => setFriendsTab("feed")} type="button">
+                    Feed
+                    {friendSessions.length > 0 ? <span className="friends-tab-count">{friendSessions.length}</span> : null}
                   </button>
                   <button className={clsx("friends-tab", friendsTab === "leaderboard" && "active")} onClick={() => setFriendsTab("leaderboard")} type="button">
                     Leaderboard
@@ -2146,7 +2180,7 @@ export default function HomePage() {
                 ) : null}
 
                 {friendsTab === "circle" ? (
-                  <div className="friends-tab-panel friends-circle-layout">
+                  <div className="friends-tab-panel">
                     <section className="friends-circle-panel">
                       <div className="section-title-row">
                         <div>
@@ -2184,7 +2218,11 @@ export default function HomePage() {
                         </div>
                       )}
                     </section>
+                  </div>
+                ) : null}
 
+                {friendsTab === "feed" ? (
+                  <div className="friends-tab-panel">
                     <section className="friends-circle-panel">
                       <div className="section-title-row">
                         <div>
@@ -2199,37 +2237,53 @@ export default function HomePage() {
                           <div className="feed friend-feed">
                             {visibleFriendFeed.map((session) => {
                               const isExpanded = expandedFriendSessionId === session.id;
+                              const sessionFriend = friendLookup.get(session.friendId);
 
                               return (
                                 <article className="climb-card friend-session-card" key={session.id}>
                                   {session.photoUrls.length > 0 ? (
-                                    <button
-                                      className={clsx(
-                                        "friend-session-preview",
-                                        session.photoUrls.length > 1 && "friend-session-collage",
-                                        session.photoUrls.length === 2 && "is-two",
-                                        session.photoUrls.length === 3 && "is-three",
-                                        session.photoUrls.length >= 4 && "is-four"
-                                      )}
-                                      onClick={() => setSelectedPhotoUrl(session.photoUrls[0])}
-                                      type="button"
-                                    >
-                                      {session.photoUrls.map((photoUrl, index) => (
-                                        <img
-                                          alt={`${session.friendName} climbing session ${index + 1}`}
-                                          className="friend-session-collage-image"
-                                          key={`${session.id}-${photoUrl}`}
-                                          src={photoUrl}
-                                        />
-                                      ))}
-                                    </button>
+                                    session.photoUrls.length === 1 ? (
+                                      <button className="friend-session-preview" onClick={() => setSelectedPhotoUrl(session.photoUrls[0])} type="button">
+                                        <img alt={`${session.friendName} climbing session`} className="friend-session-preview-image" src={session.photoUrls[0]} />
+                                      </button>
+                                    ) : (
+                                      <button
+                                        className={clsx(
+                                          "friend-session-preview",
+                                          "friend-session-collage",
+                                          session.photoUrls.length === 2 && "is-two",
+                                          session.photoUrls.length === 3 && "is-three",
+                                          session.photoUrls.length >= 4 && "is-four"
+                                        )}
+                                        onClick={() => setSelectedPhotoUrl(session.photoUrls[0])}
+                                        type="button"
+                                      >
+                                        {session.photoUrls.map((photoUrl, index) => (
+                                          <span className={clsx("friend-session-collage-cell", `cell-${index + 1}`)} key={`${session.id}-${photoUrl}`}>
+                                            <img
+                                              alt={`${session.friendName} climbing session ${index + 1}`}
+                                              className="friend-session-collage-image"
+                                              src={photoUrl}
+                                            />
+                                          </span>
+                                        ))}
+                                      </button>
+                                    )
                                   ) : null}
                                   <div className="climb-content">
                                     <div className="section-title-row">
-                                      <div>
-                                        <p className="eyebrow">{session.friendName}</p>
-                                        <h3>{session.headline}</h3>
-                                        <p className="muted history-meta">{prettyDate(session.climbedOn)}</p>
+                                      <div className="friend-session-title-row">
+                                        {renderProfileAvatar(
+                                          session.friendName,
+                                          sessionFriend?.avatarUrl ?? null,
+                                          sessionFriend?.selectedEmblems ?? [],
+                                          "friend-avatar friend-session-avatar"
+                                        )}
+                                        <div>
+                                          <p className="eyebrow">{session.friendName}</p>
+                                          <h3>{session.headline}</h3>
+                                          <p className="muted history-meta">{prettyDate(session.climbedOn)}</p>
+                                        </div>
                                       </div>
                                     </div>
                                     <div className="tag-row friend-session-summary">
