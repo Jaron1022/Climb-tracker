@@ -97,6 +97,7 @@ export default function HomePage() {
   const [friends, setFriends] = useState<FriendSummary[]>([]);
   const [friendFeed, setFriendFeed] = useState<FriendFeedClimb[]>([]);
   const [friendFeedVisibleCount, setFriendFeedVisibleCount] = useState(20);
+  const [expandedFriendSessionId, setExpandedFriendSessionId] = useState("");
   const [pendingOutgoingFriendIds, setPendingOutgoingFriendIds] = useState<string[]>([]);
   const [friendsTab, setFriendsTab] = useState<"discover" | "requests" | "circle" | "leaderboard">("circle");
   const [expandedLeaderboardId, setExpandedLeaderboardId] = useState("");
@@ -824,8 +825,9 @@ export default function HomePage() {
   );
   const visibleHistoryClimbs = filteredClimbs.slice(0, historyVisibleCount);
   const hasMoreHistory = filteredClimbs.length > historyVisibleCount;
-  const visibleFriendFeed = friendFeed.slice(0, friendFeedVisibleCount);
-  const hasMoreFriendFeed = friendFeed.length > friendFeedVisibleCount;
+  const friendSessions = useMemo(() => buildFriendSessions(friendFeed), [friendFeed]);
+  const visibleFriendFeed = friendSessions.slice(0, friendFeedVisibleCount);
+  const hasMoreFriendFeed = friendSessions.length > friendFeedVisibleCount;
   const canSaveClimb = Boolean(activeProfileId) && !loading && !booting;
   const selectedGradeCounts = progressRange === "ALL" ? stats.completedByGrade : progressStats.completedByGrade;
   const selectedGradeMax = useMemo(
@@ -2148,41 +2150,75 @@ export default function HomePage() {
                       ) : (
                         <>
                           <div className="feed friend-feed">
-                            {visibleFriendFeed.map((climb) => (
-                              <article className="climb-card" key={climb.id}>
-                                {climb.photo_url ? (
-                                  <button className="thumbnail-button" onClick={() => setSelectedPhotoUrl(climb.photo_url)} type="button">
-                                  <img alt={`${climb.grade} climb by ${climb.friend_name}`} className="climb-photo" src={climb.photo_url} />
-                                </button>
-                              ) : null}
-                              <div className="climb-content">
-                                <div className="section-title-row">
-                                  <div>
-                                    <p className="eyebrow">{climb.friend_name}</p>
-                                    <div className="history-title-row">
-                                      <h3>
-                                        {climb.grade}
-                                        {climb.grade_modifier ?? ""}
-                                      </h3>
-                                      {climb.wall_name ? (
-                                        <span className={clsx("history-description", getColorChipClass(climb.wall_name))}>{climb.wall_name}</span>
-                                      ) : null}
+                            {visibleFriendFeed.map((session) => {
+                              const isExpanded = expandedFriendSessionId === session.id;
+
+                              return (
+                                <article className="climb-card friend-session-card" key={session.id}>
+                                  {session.photoUrl ? (
+                                    <button className="thumbnail-button" onClick={() => setSelectedPhotoUrl(session.photoUrl)} type="button">
+                                      <img alt={`${session.friendName} climbing session`} className="climb-photo" src={session.photoUrl} />
+                                    </button>
+                                  ) : null}
+                                  <div className="climb-content">
+                                    <div className="section-title-row">
+                                      <div>
+                                        <p className="eyebrow">{session.friendName}</p>
+                                        <div className="history-title-row">
+                                          <h3>{session.headline}</h3>
+                                          {session.topColor ? (
+                                            <span className={clsx("history-description", getColorChipClass(session.topColor))}>{session.topColor}</span>
+                                          ) : null}
+                                        </div>
+                                        <p className="muted history-meta">{prettyDate(session.climbedOn)}</p>
+                                      </div>
                                     </div>
-                                    <p className="muted history-meta">{prettyDate(climb.climbed_on)}</p>
+                                    <div className="tag-row friend-session-summary">
+                                      <span className="mini-badge">{session.sendCount} sends</span>
+                                      <span className="mini-badge ready">+{session.totalXp} XP</span>
+                                      <span className="mini-badge">Top {session.hardestLabel}</span>
+                                      {session.flashCount > 0 ? <span className="mini-badge ready">{session.flashCount} flash{session.flashCount > 1 ? "es" : ""}</span> : null}
+                                    </div>
+                                    <button
+                                      className="text-button friend-session-toggle"
+                                      onClick={() => setExpandedFriendSessionId((current) => (current === session.id ? "" : session.id))}
+                                      type="button"
+                                    >
+                                      {isExpanded ? "Hide climbs" : "View climbs"}
+                                    </button>
+                                    {isExpanded ? (
+                                      <div className="friend-session-climb-list">
+                                        {session.climbs.map((climb) => (
+                                          <div className="friend-session-climb-row" key={climb.id}>
+                                            <div>
+                                              <div className="history-title-row">
+                                                <strong>
+                                                  {climb.grade}
+                                                  {climb.grade_modifier ?? ""}
+                                                </strong>
+                                                {climb.wall_name ? (
+                                                  <span className={clsx("history-description", getColorChipClass(climb.wall_name))}>{climb.wall_name}</span>
+                                                ) : null}
+                                              </div>
+                                              <div className="tag-row">
+                                                {climb.flashed ? <span className="mini-badge ready">flash</span> : null}
+                                                {climb.style_tags.map((tag) => (
+                                                  <span className="mini-badge" key={tag}>
+                                                    {tag}
+                                                  </span>
+                                                ))}
+                                              </div>
+                                              {climb.notes ? <p className="muted friend-session-note">{climb.notes}</p> : null}
+                                            </div>
+                                            <span className="xp-line">+{climbToXp(climb.grade, Boolean(climb.flashed), climb.grade_modifier ?? null)} XP</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    ) : null}
                                   </div>
-                                </div>
-                                <div className="tag-row">
-                                  {climb.flashed ? <span className="mini-badge ready">flash</span> : null}
-                                  {climb.style_tags.map((tag) => (
-                                    <span className="mini-badge" key={tag}>
-                                      {tag}
-                                    </span>
-                                  ))}
-                                </div>
-                                {climb.notes ? <p>{climb.notes}</p> : null}
-                              </div>
-                              </article>
-                            ))}
+                                </article>
+                              );
+                            })}
                           </div>
                           {hasMoreFriendFeed ? (
                             <div className="history-footer">
@@ -2648,6 +2684,89 @@ function getColorChipClass(value: string) {
   }
 
   return "";
+}
+
+function buildFriendSessions(climbs: FriendFeedClimb[]) {
+  const sessions = new Map<
+    string,
+    {
+      id: string;
+      friendId: string;
+      friendName: string;
+      climbedOn: string;
+      photoUrl: string | null;
+      topColor: string | null;
+      hardestLabel: string;
+      headline: string;
+      sendCount: number;
+      flashCount: number;
+      totalXp: number;
+      climbs: FriendFeedClimb[];
+      bestSort: number;
+    }
+  >();
+
+  climbs.forEach((climb) => {
+    const friendId = climb.profile_id;
+    const sessionId = `${friendId}:${climb.climbed_on}`;
+    const current = sessions.get(sessionId);
+    const climbSort = climbSortScore(climb);
+
+    if (!current) {
+      sessions.set(sessionId, {
+        id: sessionId,
+        friendId,
+        friendName: climb.friend_name,
+        climbedOn: climb.climbed_on,
+        photoUrl: climb.photo_url ?? null,
+        topColor: climb.wall_name ?? null,
+        hardestLabel: `${climb.grade}${climb.grade_modifier ?? ""}`,
+        headline: `${climb.grade}${climb.grade_modifier ?? ""} session`,
+        sendCount: 1,
+        flashCount: Number(Boolean(climb.flashed)),
+        totalXp: climbToXp(climb.grade, Boolean(climb.flashed), climb.grade_modifier ?? null),
+        climbs: [climb],
+        bestSort: climbSort
+      });
+      return;
+    }
+
+    current.sendCount += 1;
+    current.flashCount += Number(Boolean(climb.flashed));
+    current.totalXp += climbToXp(climb.grade, Boolean(climb.flashed), climb.grade_modifier ?? null);
+    current.climbs.push(climb);
+
+    if (!current.photoUrl && climb.photo_url) {
+      current.photoUrl = climb.photo_url;
+    }
+
+    if (climbSort > current.bestSort) {
+      current.bestSort = climbSort;
+      current.hardestLabel = `${climb.grade}${climb.grade_modifier ?? ""}`;
+      current.topColor = climb.wall_name ?? current.topColor;
+    }
+  });
+
+  return Array.from(sessions.values())
+    .map((session) => ({
+      ...session,
+      headline: `${session.sendCount} sends`,
+      climbs: session.climbs.slice().sort((left, right) => climbSortScore(right) - climbSortScore(left))
+    }))
+    .sort((left, right) => {
+      if (left.climbedOn !== right.climbedOn) {
+        return right.climbedOn.localeCompare(left.climbedOn);
+      }
+
+      return left.friendName.localeCompare(right.friendName);
+    });
+}
+
+function climbSortScore(climb: Pick<ClimbRow, "grade" | "grade_modifier" | "flashed">) {
+  const base = CLIMB_GRADES.indexOf(climb.grade);
+  const modifierBoost = climb.grade_modifier === "+" ? 0.35 : climb.grade_modifier === "-" ? -0.35 : 0;
+  const flashBoost = climb.flashed ? 0.08 : 0;
+  return base + modifierBoost + flashBoost;
 }
 
 function initialsForName(name: string) {

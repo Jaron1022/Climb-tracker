@@ -594,6 +594,38 @@ button {
   grid-template-columns: repeat(2, minmax(260px, 1fr));
 }
 
+.friend-session-card {
+  display: grid;
+}
+
+.friend-session-summary {
+  margin-bottom: 0.2rem;
+}
+
+.friend-session-toggle {
+  justify-self: start;
+  padding-left: 0;
+}
+
+.friend-session-climb-list {
+  display: grid;
+  gap: 0.7rem;
+  margin-top: 0.2rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid color-mix(in srgb, var(--line) 84%, transparent);
+}
+
+.friend-session-climb-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.8rem;
+  align-items: start;
+}
+
+.friend-session-note {
+  margin: 0.35rem 0 0;
+}
+
 .friend-row {
   display: flex;
   align-items: center;
