@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import clsx from "clsx";
 import { EMBLEM_DEFINITIONS, getUnlockedEmblems, normalizeSelectedEmblems } from "@/lib/emblems";
 import { APP_THEMES, normalizeSelectedTheme } from "@/lib/themes";
-import { CLIMB_COLORS, CLIMB_GRADES, DEFAULT_FORM, FLASH_XP_MULTIPLIER, GRADE_MODIFIER_MULTIPLIERS, STYLE_TAG_GROUPS, climbToXp, gradeToXp } from "@/lib/xp";
+import { CLIMB_COLORS, CLIMB_GRADES, DEFAULT_FORM, FLASH_XP_MULTIPLIER, GRADE_MODIFIER_MULTIPLIERS, STYLE_TAG_GROUPS, climbToXp, createDefaultForm, gradeToXp } from "@/lib/xp";
 import { uploadPhoto } from "@/lib/local-store";
 import {
   buildLeaderboardScore,
@@ -70,7 +70,7 @@ export default function HomePage() {
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signup");
   const [activeView, setActiveView] = useState<"home" | "history" | "friends" | "account" | "progress">("home");
   const [accountDisplayName, setAccountDisplayName] = useState("");
-  const [form, setForm] = useState(DEFAULT_FORM);
+  const [form, setForm] = useState(() => createDefaultForm());
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [selectedFriendId, setSelectedFriendId] = useState("");
   const photoInputRef = useRef<HTMLInputElement | null>(null);
@@ -690,7 +690,7 @@ export default function HomePage() {
       }
       const updatedClimbs = await fetchClimbsForUser(activeProfileId);
       setClimbs(updatedClimbs);
-      setForm(DEFAULT_FORM);
+      setForm(createDefaultForm());
       setPhotoFile(null);
       setEditingClimb(null);
       if (photoInputRef.current) {
@@ -735,7 +735,7 @@ export default function HomePage() {
 
   function openComposer() {
     setEditingClimb(null);
-    setForm(DEFAULT_FORM);
+    setForm(createDefaultForm());
     setPhotoFile(null);
     if (photoInputRef.current) {
       photoInputRef.current.value = "";
@@ -2307,7 +2307,7 @@ export default function HomePage() {
                                         type="button"
                                       >
                                         <span className="kudos-button-icon" aria-hidden="true">
-                                          ♥
+                                          👍
                                         </span>
                                         <span>{session.kudosCount > 0 ? `${session.kudosCount} kudos` : "Give kudos"}</span>
                                       </button>

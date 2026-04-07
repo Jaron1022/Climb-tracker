@@ -1,4 +1,4 @@
-import { CLIMB_GRADES, climbToXp, levelFromXp, xpIntoCurrentLevel, xpNeededForNextLevel } from "./xp";
+import { CLIMB_GRADES, climbToXp, formatLocalDateKey, levelFromXp, xpIntoCurrentLevel, xpNeededForNextLevel } from "./xp";
 import type { ClimbRow, Grade, GradeModifier, StyleTag } from "./types";
 
 export const PROGRESS_RANGES = ["1W", "1M", "3M", "1Y", "ALL"] as const;
@@ -220,7 +220,7 @@ function buildDailyBuckets(climbs: ClimbRow[], now: Date, count: number, labelMo
   return Array.from({ length: count }, (_, index) => {
     const date = startOfDay(new Date(now));
     date.setDate(now.getDate() - (count - index - 1));
-    const key = date.toISOString().slice(0, 10);
+    const key = formatLocalDateKey(date);
     const label = new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short", day: "numeric" }).format(date);
     const shortLabel =
       labelMode === "week"
@@ -239,7 +239,7 @@ function buildWeeklyBuckets(climbs: ClimbRow[], now: Date, count: number, labelM
     start.setDate(currentWeekStart.getDate() - (count - index - 1) * 7);
     const end = new Date(start);
     end.setDate(start.getDate() + 6);
-    const key = start.toISOString().slice(0, 10);
+    const key = formatLocalDateKey(start);
     const label = `${new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(start)} - ${new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(end)}`;
     const shortLabel =
       labelMode === "quarter"
@@ -395,7 +395,7 @@ function startOfWeek(date: Date) {
 }
 
 function weekKey(date: Date) {
-  return startOfWeek(date).toISOString().slice(0, 10);
+  return formatLocalDateKey(startOfWeek(date));
 }
 
 function rangeToLabel(range: ProgressRange) {
@@ -498,7 +498,7 @@ function buildDailyRecap(climbs: ClimbRow[]) {
     return null;
   }
 
-  const todayKey = new Date().toISOString().slice(0, 10);
+  const todayKey = formatLocalDateKey(new Date());
   const mostRecentDate = climbs.reduce((latest, climb) => (climb.climbed_on > latest ? climb.climbed_on : latest), climbs[0].climbed_on);
   const dayClimbs = climbs
     .filter((climb) => climb.climbed_on === mostRecentDate)

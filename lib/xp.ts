@@ -53,15 +53,26 @@ export const STYLE_TAG_GROUPS = [
   }
 ] as const;
 
-export const DEFAULT_FORM: ClimbForm = {
-  grade: "VB" as Grade,
-  flashed: false,
-  gradeModifier: null,
-  styleTags: [] as StyleTag[],
-  color: "",
-  notes: "",
-  date: new Date().toISOString().slice(0, 10)
-};
+export function formatLocalDateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+export function createDefaultForm(): ClimbForm {
+  return {
+    grade: "VB" as Grade,
+    flashed: false,
+    gradeModifier: null,
+    styleTags: [] as StyleTag[],
+    color: "",
+    notes: "",
+    date: formatLocalDateKey(new Date())
+  };
+}
+
+export const DEFAULT_FORM: ClimbForm = createDefaultForm();
 
 const XP_BY_GRADE: Record<Grade, number> = {
   VB: 1,
