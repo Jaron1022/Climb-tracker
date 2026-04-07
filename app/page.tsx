@@ -106,7 +106,7 @@ export default function HomePage() {
   const [expandedFriendSessionId, setExpandedFriendSessionId] = useState("");
   const [activeKudosSessionId, setActiveKudosSessionId] = useState("");
   const [pendingOutgoingFriendIds, setPendingOutgoingFriendIds] = useState<string[]>([]);
-  const [friendsTab, setFriendsTab] = useState<"discover" | "requests" | "circle" | "feed" | "leaderboard">("circle");
+  const [friendsTab, setFriendsTab] = useState<"connect" | "circle" | "feed" | "leaderboard">("feed");
   const [expandedLeaderboardId, setExpandedLeaderboardId] = useState("");
   const [progressRange, setProgressRange] = useState<ProgressRange>("ALL");
   const [isLandscapePhone, setIsLandscapePhone] = useState(false);
@@ -2004,12 +2004,10 @@ export default function HomePage() {
                   <div>
                     <p className="eyebrow">Friends</p>
                     <h2>
-                      {friendsTab === "discover"
-                        ? "Find climbers"
-                        : friendsTab === "requests"
-                          ? "Requests"
-                          : friendsTab === "feed"
-                            ? "Friend feed"
+                      {friendsTab === "connect"
+                        ? "Connect"
+                        : friendsTab === "feed"
+                          ? "Friend feed"
                           : friendsTab === "leaderboard"
                             ? "Leaderboard"
                             : "Your circle"}
@@ -2018,11 +2016,8 @@ export default function HomePage() {
                 </div>
 
                 <div className="friends-tab-row" role="tablist" aria-label="Friends sections">
-                  <button className={clsx("friends-tab", friendsTab === "discover" && "active")} onClick={() => setFriendsTab("discover")} type="button">
-                    Discover
-                  </button>
-                  <button className={clsx("friends-tab", friendsTab === "requests" && "active")} onClick={() => setFriendsTab("requests")} type="button">
-                    Requests
+                  <button className={clsx("friends-tab", friendsTab === "connect" && "active")} onClick={() => setFriendsTab("connect")} type="button">
+                    Connect
                     {incomingRequests.length > 0 ? <span className="friends-tab-count">{incomingRequests.length}</span> : null}
                   </button>
                   <button className={clsx("friends-tab", friendsTab === "circle" && "active")} onClick={() => setFriendsTab("circle")} type="button">
@@ -2038,7 +2033,7 @@ export default function HomePage() {
                   </button>
                 </div>
 
-                {friendsTab === "discover" ? (
+                {friendsTab === "connect" ? (
                   <div className="friends-tab-panel">
                     <p className="muted friends-section-copy">Search by climber name, send a request, and start sharing sends with your circle.</p>
                     <label className="field">
@@ -2083,11 +2078,13 @@ export default function HomePage() {
                         })
                       )}
                     </div>
-                  </div>
-                ) : null}
-
-                {friendsTab === "requests" ? (
-                  <div className="friends-tab-panel">
+                    <section className="friends-connect-requests">
+                      <div className="section-title-row">
+                        <div>
+                          <p className="eyebrow">Requests</p>
+                          <h3>Incoming</h3>
+                        </div>
+                      </div>
                     {incomingRequests.length === 0 ? (
                       <p className="empty-copy">No incoming requests right now.</p>
                     ) : (
@@ -2123,6 +2120,7 @@ export default function HomePage() {
                         ))}
                       </div>
                     )}
+                    </section>
                   </div>
                 ) : null}
 
@@ -2294,6 +2292,13 @@ export default function HomePage() {
                                     </div>
                                     <div className="friend-session-actions">
                                       <button
+                                        className="text-button friend-session-toggle"
+                                        onClick={() => setExpandedFriendSessionId((current) => (current === session.id ? "" : session.id))}
+                                        type="button"
+                                      >
+                                        {isExpanded ? "Hide climbs" : "View climbs"}
+                                      </button>
+                                      <button
                                         className={clsx("kudos-button", session.likedByViewer && "liked")}
                                         disabled={activeKudosSessionId === session.id || session.friendId === activeProfileId}
                                         onClick={() =>
@@ -2305,13 +2310,6 @@ export default function HomePage() {
                                           ♥
                                         </span>
                                         <span>{session.kudosCount > 0 ? `${session.kudosCount} kudos` : "Give kudos"}</span>
-                                      </button>
-                                      <button
-                                        className="text-button friend-session-toggle"
-                                        onClick={() => setExpandedFriendSessionId((current) => (current === session.id ? "" : session.id))}
-                                        type="button"
-                                      >
-                                        {isExpanded ? "Hide climbs" : "View climbs"}
                                       </button>
                                     </div>
                                     {isExpanded ? (
