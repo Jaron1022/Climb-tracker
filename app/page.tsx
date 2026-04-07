@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import clsx from "clsx";
 import { EMBLEM_DEFINITIONS, getUnlockedEmblems, normalizeSelectedEmblems } from "@/lib/emblems";
 import { APP_THEMES, normalizeSelectedTheme } from "@/lib/themes";
-import { CLIMB_COLORS, CLIMB_GRADES, DEFAULT_FORM, FLASH_XP_MULTIPLIER, GRADE_MODIFIER_MULTIPLIERS, STYLE_TAG_GROUPS, climbToXp, createDefaultForm, gradeToXp } from "@/lib/xp";
+import { CLIMB_COLORS, CLIMB_GRADES, FLASH_XP_MULTIPLIER, GRADE_MODIFIER_MULTIPLIERS, STYLE_TAG_GROUPS, climbToXp, createDefaultForm, formatLocalDateKey, gradeToXp } from "@/lib/xp";
 import { uploadPhoto } from "@/lib/local-store";
 import {
   buildLeaderboardScore,
@@ -24,13 +24,16 @@ import {
 import { hasSupabaseConfig } from "@/lib/supabase/client";
 import {
   deleteClimbForUser,
+  deleteProjectForUser,
   deleteCurrentAccount,
   ensureProfile,
   fetchClimbsForUser,
+  fetchProjectsForUser,
   fetchProfile,
   getCurrentUser,
   requestPasswordReset,
   saveClimbForUser,
+  saveProjectForUser,
   signInWithEmail,
   signOutUser,
   signUpWithEmail,
@@ -40,7 +43,8 @@ import {
   updateSelectedEmblems,
   updateSelectedTheme,
   updateDisplayName,
-  updateClimbForUser
+  updateClimbForUser,
+  updateProjectSessionForUser
 } from "@/lib/supabase-store";
 import type {
   ClimbInsert,
@@ -51,6 +55,8 @@ import type {
   IncomingFriendRequest,
   ProfileRow,
   ProfileSearchRow,
+  ProjectInsert,
+  ProjectRow,
   SessionKudosSummary,
   StyleTag
 } from "@/lib/types";
@@ -60,6 +66,7 @@ export default function HomePage() {
   const [activeProfile, setActiveProfile] = useState<ProfileRow | null>(null);
   const [activeProfileId, setActiveProfileId] = useState("");
   const [climbs, setClimbs] = useState<ClimbRow[]>([]);
+  const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [currentUserEmail, setCurrentUserEmail] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -82,11 +89,13 @@ export default function HomePage() {
   const [booting, setBooting] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [activeAction, setActiveAction] = useState<"auth" | "rename" | "avatar" | "emblems" | "theme" | "logout" | "account-delete" | "password-reset" | "password-update" | "climb" | "edit" | "load" | "delete" | "">("");
+  const [activeAction, setActiveAction] = useState<"auth" | "rename" | "avatar" | "emblems" | "theme" | "logout" | "account-delete" | "password-reset" | "password-update" | "climb" | "edit" | "project" | "project-work" | "project-delete" | "load" | "delete" | "">("");
   const [selectedPhotoUrl, setSelectedPhotoUrl] = useState<string | null>(null);
   const [climbPendingDelete, setClimbPendingDelete] = useState<ClimbRow | null>(null);
   const [editingClimb, setEditingClimb] = useState<ClimbRow | null>(null);
   const [isComposerOpen, setIsComposerOpen] = useState(false);
+  const [isProjectComposerOpen, setIsProjectComposerOpen] = useState(false);
+  const [projectPendingSend, setProjectPendingSend] = useState<ProjectRow | null>(null);
   const [showSaveBurst, setShowSaveBurst] = useState(false);
   const [isXpInfoOpen, setIsXpInfoOpen] = useState(false);
   const [isEmblemPickerOpen, setIsEmblemPickerOpen] = useState(false);
@@ -167,6 +176,7 @@ export default function HomePage() {
       setCurrentUserEmail("");
       setAccountDisplayName("");
       setClimbs([]);
+      setProjects([]);
       setFriendSearch("");
       setFriendResults([]);
       setIncomingRequests([]);
@@ -188,6 +198,16 @@ export default function HomePage() {
 
     const profileClimbs = await fetchClimbsForUser(userId);
     setClimbs(profileClimbs);
+    try {
+      const profileProjects = await fetchProjectsForUser(userId);
+      setProjects(profileProjects);
+    } catch (err) {
+      const message = getMessage(err).toLowerCase();
+      if (!message.includes("projects")) {
+        throw err;
+      }
+      setProjects([]);
+    }
     try {
       const receivedKudos = await fetchReceivedSessionKudos(userId);
       setReceivedSessionKudosByDate(receivedKudos);
@@ -688,8 +708,13 @@ export default function HomePage() {
       } else {
         await saveClimbForUser(activeProfileId, climbPayload);
       }
+      if (projectPendingSend) {
+        await deleteProjectForUser(activeProfileId, projectPendingSend.id);
+        setProjectPendingSend(null);
+      }
       const updatedClimbs = await fetchClimbsForUser(activeProfileId);
       setClimbs(updatedClimbs);
+      await refreshProjectsView();
       setForm(createDefaultForm());
       setPhotoFile(null);
       setEditingClimb(null);
@@ -703,6 +728,103 @@ export default function HomePage() {
       setShowSaveBurst(true);
       window.setTimeout(() => setShowSaveBurst(false), 1600);
       setSuccess(editingClimb ? "Climb updated." : "Climb logged.");
+    } catch (err) {
+      setError(getMessage(err));
+    } finally {
+      setLoading(false);
+      setActiveAction("");
+    }
+  }
+
+  async function handleProjectSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!activeProfileId) {
+      setError("Create your climber profile first.");
+      setSuccess("");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setActiveAction("project");
+      setError("");
+      setSuccess("");
+
+      let photoUrl = "";
+      if (photoFile) {
+        photoUrl = await uploadPhoto(photoFile);
+      }
+
+      const projectPayload: Omit<ProjectInsert, "profile_id"> = {
+        photo_url: photoUrl || null,
+        grade: form.grade,
+        grade_modifier: form.gradeModifier,
+        style_tags: form.styleTags,
+        wall_name: form.color.trim() || null,
+        notes: form.notes.trim() || null,
+        first_logged_on: form.date,
+        last_worked_on: form.date,
+        session_count: 1
+      };
+
+      await saveProjectForUser(activeProfileId, projectPayload);
+      await refreshProjectsView();
+      setForm(createDefaultForm());
+      setPhotoFile(null);
+      if (photoInputRef.current) {
+        photoInputRef.current.value = "";
+      }
+      if (cameraCaptureInputRef.current) {
+        cameraCaptureInputRef.current.value = "";
+      }
+      setIsProjectComposerOpen(false);
+      setSuccess("Project saved.");
+    } catch (err) {
+      setError(getMessage(err));
+    } finally {
+      setLoading(false);
+      setActiveAction("");
+    }
+  }
+
+  async function handleWorkProject(project: ProjectRow) {
+    if (!activeProfileId) {
+      return;
+    }
+
+    const todayKey = formatLocalDateKey(new Date());
+    const incrementSessionCount = project.last_worked_on !== todayKey;
+
+    try {
+      setLoading(true);
+      setActiveAction("project-work");
+      setError("");
+      setSuccess("");
+      await updateProjectSessionForUser(activeProfileId, project.id, todayKey, incrementSessionCount);
+      await refreshProjectsView();
+      setSuccess(incrementSessionCount ? "Project session logged." : "Project already counted for today.");
+    } catch (err) {
+      setError(getMessage(err));
+    } finally {
+      setLoading(false);
+      setActiveAction("");
+    }
+  }
+
+  async function handleDeleteProject(projectId: string) {
+    if (!activeProfileId) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setActiveAction("project-delete");
+      setError("");
+      setSuccess("");
+      await deleteProjectForUser(activeProfileId, projectId);
+      await refreshProjectsView();
+      setSuccess("Project removed.");
     } catch (err) {
       setError(getMessage(err));
     } finally {
@@ -735,6 +857,7 @@ export default function HomePage() {
 
   function openComposer() {
     setEditingClimb(null);
+    setProjectPendingSend(null);
     setForm(createDefaultForm());
     setPhotoFile(null);
     if (photoInputRef.current) {
@@ -746,8 +869,23 @@ export default function HomePage() {
     setIsComposerOpen(true);
   }
 
+  function openProjectComposer() {
+    setEditingClimb(null);
+    setProjectPendingSend(null);
+    setForm(createDefaultForm());
+    setPhotoFile(null);
+    if (photoInputRef.current) {
+      photoInputRef.current.value = "";
+    }
+    if (cameraCaptureInputRef.current) {
+      cameraCaptureInputRef.current.value = "";
+    }
+    setIsProjectComposerOpen(true);
+  }
+
   function openEditor(climb: ClimbRow) {
     setEditingClimb(climb);
+    setProjectPendingSend(null);
     setForm({
       grade: climb.grade,
       flashed: Boolean(climb.flashed),
@@ -764,6 +902,29 @@ export default function HomePage() {
     if (cameraCaptureInputRef.current) {
       cameraCaptureInputRef.current.value = "";
     }
+    setIsComposerOpen(true);
+  }
+
+  function handleMarkProjectSent(project: ProjectRow) {
+    setProjectPendingSend(project);
+    setEditingClimb(null);
+    setForm({
+      grade: project.grade,
+      flashed: false,
+      gradeModifier: project.grade_modifier ?? null,
+      styleTags: project.style_tags,
+      color: project.wall_name ?? "",
+      notes: project.notes ?? "",
+      date: formatLocalDateKey(new Date())
+    });
+    setPhotoFile(null);
+    if (photoInputRef.current) {
+      photoInputRef.current.value = "";
+    }
+    if (cameraCaptureInputRef.current) {
+      cameraCaptureInputRef.current.value = "";
+    }
+    setIsProjectComposerOpen(false);
     setIsComposerOpen(true);
   }
 
@@ -794,6 +955,7 @@ export default function HomePage() {
       return climbedOn >= threshold;
     });
     const activeDays7 = new Set(recentClimbs.map((climb) => climb.climbed_on)).size;
+    const uniqueGrades7 = new Set(recentClimbs.map((climb) => climb.grade)).size;
     const weeklyXp7 = recentClimbs.reduce(
       (total, climb) => total + climbToXp(climb.grade, Boolean(climb.flashed), climb.grade_modifier ?? null),
       0
@@ -809,8 +971,9 @@ export default function HomePage() {
           weeklyXp7,
           recentSends7: recentClimbs.length,
           activeDays7,
-          score: buildLeaderboardScore(weeklyXp7, activeDays7),
-          breakdown: getLeaderboardScoreBreakdown(weeklyXp7, activeDays7),
+          uniqueGrades7,
+          score: buildLeaderboardScore(weeklyXp7, recentClimbs.length, activeDays7, uniqueGrades7),
+          breakdown: getLeaderboardScoreBreakdown(weeklyXp7, recentClimbs.length, activeDays7, uniqueGrades7),
           isYou: true
         }
       : null;
@@ -822,8 +985,10 @@ export default function HomePage() {
       selectedEmblems: friend.selectedEmblems,
       level: friend.level,
       personalBest: friend.personalBest,
+      weeklyXp7: friend.weeklyXp7,
       recentSends7: friend.recentSends7,
       activeDays7: friend.activeDays7,
+      uniqueGrades7: friend.uniqueGrades7,
       score: friend.leaderboardScore,
       breakdown: friend.leaderboardBreakdown,
       isYou: false
@@ -831,7 +996,13 @@ export default function HomePage() {
 
     return [selfEntry, ...friendEntries]
       .filter((entry): entry is NonNullable<typeof selfEntry> => Boolean(entry))
-      .sort((left, right) => right.score - left.score || right.level - left.level || left.name.localeCompare(right.name));
+      .sort(
+        (left, right) =>
+          right.score - left.score ||
+          right.activeDays7 - left.activeDays7 ||
+          right.recentSends7 - left.recentSends7 ||
+          left.name.localeCompare(right.name)
+      );
   }, [activeProfile, climbs, friends, selectedEmblems, stats.level, stats.personalBest]);
   const maxGradeCount = useMemo(
     () => Math.max(1, ...CLIMB_GRADES.map((grade) => stats.completedByGrade[grade] ?? 0)),
@@ -933,6 +1104,15 @@ export default function HomePage() {
     }
 
     await hydrateFriendState(activeProfileId);
+  }
+
+  async function refreshProjectsView() {
+    if (!activeProfileId) {
+      return;
+    }
+
+    const updatedProjects = await fetchProjectsForUser(activeProfileId);
+    setProjects(updatedProjects);
   }
 
   async function handleToggleSessionKudos(sessionId: string, recipientId: string, climbedOn: string, likedByViewer: boolean) {
@@ -1460,20 +1640,37 @@ export default function HomePage() {
 
       {isComposerOpen ? (
         <div className="composer-root">
-          <div className="composer-backdrop" onClick={() => setIsComposerOpen(false)} />
+          <div
+            className="composer-backdrop"
+            onClick={() => {
+              setIsComposerOpen(false);
+              setProjectPendingSend(null);
+            }}
+          />
           <section className="composer-sheet" onClick={(event) => event.stopPropagation()}>
             <div className="section-title-row composer-header">
               <div>
-                <p className="eyebrow">{editingClimb ? "Edit climb" : "New climb"}</p>
-                <h2>{editingClimb ? "Update climb" : "Add a climb"}</h2>
+                <p className="eyebrow">{editingClimb ? "Edit climb" : projectPendingSend ? "Project send" : "New climb"}</p>
+                <h2>{editingClimb ? "Update climb" : projectPendingSend ? "Log the send" : "Add a climb"}</h2>
               </div>
-              <button className="secondary-button" onClick={() => setIsComposerOpen(false)} type="button">
+              <button
+                className="secondary-button"
+                onClick={() => {
+                  setIsComposerOpen(false);
+                  setProjectPendingSend(null);
+                }}
+                type="button"
+              >
                 Close
               </button>
             </div>
 
             <p className="muted helper-copy">
-              {editingClimb ? "Update anything you want to keep track of. Retake the photo only if you want to replace it." : "Save the essentials first. Color and notes are just memory helpers."}
+              {editingClimb
+                ? "Update anything you want to keep track of. Retake the photo only if you want to replace it."
+                : projectPendingSend
+                  ? "This turns the project into a real send and awards XP normally."
+                  : "Save the essentials first. Color and notes are just memory helpers."}
             </p>
 
             <form className="stack-sm" onSubmit={handleClimbSubmit}>
@@ -1632,6 +1829,161 @@ export default function HomePage() {
 
               <button className="primary-button" disabled={!canSaveClimb} type="submit">
                 {activeAction === "edit" ? "Saving changes..." : activeAction === "climb" ? "Saving climb..." : editingClimb ? "Save changes" : "Save climb"}
+              </button>
+            </form>
+          </section>
+        </div>
+      ) : null}
+
+      {isProjectComposerOpen ? (
+        <div className="composer-root">
+          <div className="composer-backdrop" onClick={() => setIsProjectComposerOpen(false)} />
+          <section className="composer-sheet" onClick={(event) => event.stopPropagation()}>
+            <div className="section-title-row composer-header">
+              <div>
+                <p className="eyebrow">Project</p>
+                <h2>Log a project</h2>
+              </div>
+              <button className="secondary-button" onClick={() => setIsProjectComposerOpen(false)} type="button">
+                Close
+              </button>
+            </div>
+
+            <p className="muted helper-copy">
+              Projects track climbs you’re working on without awarding XP. You can mark them sent later from the dashboard.
+            </p>
+
+            <form className="stack-sm" onSubmit={handleProjectSubmit}>
+              <label className="field">
+                <span>Photo</span>
+                <div className="photo-button-row">
+                  <button className="camera-button" onClick={() => cameraCaptureInputRef.current?.click()} ref={cameraButtonRef} type="button">
+                    {photoFile ? "Retake photo" : "Take photo"}
+                  </button>
+                  <button className="secondary-button photo-picker-button" onClick={() => photoInputRef.current?.click()} type="button">
+                    Choose file
+                  </button>
+                </div>
+                <input
+                  id="project-photo-upload"
+                  ref={photoInputRef}
+                  accept="image/*"
+                  type="file"
+                  onChange={handlePhotoChange}
+                  className="hidden-file-input"
+                />
+                <input
+                  ref={cameraCaptureInputRef}
+                  accept="image/*"
+                  capture="environment"
+                  type="file"
+                  onChange={handlePhotoChange}
+                  className="hidden-file-input"
+                />
+                <small className="muted">{photoFile ? `${photoFile.name} ready to upload.` : ""}</small>
+              </label>
+
+              <label className="field">
+                <span>Grade</span>
+                <select
+                  value={form.grade}
+                  onChange={(event) => setForm((current) => ({ ...current, grade: event.target.value as ClimbRow["grade"] }))}
+                >
+                  {CLIMB_GRADES.map((grade) => (
+                    <option key={grade} value={grade}>
+                      {grade}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <div className="field">
+                <span>Grade modifier</span>
+                <div className="modifier-row" role="group" aria-label="Project grade modifier">
+                  {(["-", "+"] as const).map((modifier) => (
+                    <button
+                      className={clsx("modifier-button", form.gradeModifier === modifier && "selected")}
+                      key={modifier}
+                      onClick={() =>
+                        setForm((current) => ({
+                          ...current,
+                          gradeModifier: current.gradeModifier === modifier ? null : modifier
+                        }))
+                      }
+                      type="button"
+                    >
+                      {modifier}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <label className="field">
+                <span>Color</span>
+                <select value={form.color} onChange={(event) => setForm((current) => ({ ...current, color: event.target.value }))}>
+                  <option value="">No color</option>
+                  {CLIMB_COLORS.map((color) => (
+                    <option key={color} value={color}>
+                      {color}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="field field-compact">
+                <span>Worked on</span>
+                <input
+                  type="date"
+                  value={form.date}
+                  onChange={(event) => setForm((current) => ({ ...current, date: event.target.value }))}
+                />
+              </label>
+
+              <section className="tag-section">
+                <div className="tag-section-header">
+                  <p className="eyebrow">Style tags</p>
+                </div>
+                <div className="tag-groups">
+                  {STYLE_TAG_GROUPS.map((group) => (
+                    <div className="tag-group" key={group.label}>
+                      <p className="tag-group-label">{group.label}</p>
+                      <div className="tag-grid">
+                        {group.tags.map((tag) => {
+                          const selected = form.styleTags.includes(tag);
+                          return (
+                            <button
+                              className={clsx("tag-button", selected && "selected")}
+                              key={tag}
+                              onClick={() =>
+                                setForm((current) => ({
+                                  ...current,
+                                  styleTags: toggleStyleTag(current.styleTags, tag)
+                                }))
+                              }
+                              type="button"
+                            >
+                              {tag}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <label className="field">
+                <span>Notes</span>
+                <textarea
+                  placeholder="Crux beta, where it shut you down, what to try next..."
+                  rows={4}
+                  value={form.notes}
+                  onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))}
+                />
+              </label>
+
+              <button className="primary-button" disabled={!canSaveClimb} type="submit">
+                {activeAction === "project" ? "Saving project..." : "Save project"}
               </button>
             </form>
           </section>
@@ -1850,11 +2202,73 @@ export default function HomePage() {
                     <p className="empty-copy">Log a climb and your most recent session recap will show up here.</p>
                   )}
                 </section>
+                <section className="panel projects-panel">
+                  <div className="section-title-row">
+                    <div>
+                      <p className="eyebrow">Projects</p>
+                      <h2>Active work</h2>
+                    </div>
+                    <span className="badge">{projects.length}</span>
+                  </div>
+
+                  {projects.length > 0 ? (
+                    <div className="project-list">
+                      {projects.slice(0, 4).map((project) => (
+                        <article className="project-row" key={project.id}>
+                          <div className="project-row-main">
+                            <strong>
+                              {project.grade}
+                              {project.grade_modifier ?? ""}
+                              {project.wall_name ? ` • ${project.wall_name}` : ""}
+                            </strong>
+                            <p className="muted project-row-meta">
+                              {project.session_count} session{project.session_count === 1 ? "" : "s"} • last worked {prettyDate(project.last_worked_on)}
+                            </p>
+                            {project.notes ? <p className="muted">{project.notes}</p> : null}
+                          </div>
+                          <div className="project-row-actions">
+                            <button
+                              className="secondary-button project-action-button"
+                              disabled={loading}
+                              onClick={() => void handleWorkProject(project)}
+                              type="button"
+                            >
+                              Worked today
+                            </button>
+                            <button
+                              className="primary-button project-action-button"
+                              disabled={loading}
+                              onClick={() => handleMarkProjectSent(project)}
+                              type="button"
+                            >
+                              Mark sent
+                            </button>
+                            <button
+                              className="text-button project-action-button"
+                              disabled={loading}
+                              onClick={() => void handleDeleteProject(project.id)}
+                              type="button"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="empty-copy">Projects give you a place to log climbs you’re working on without earning XP yet.</p>
+                  )}
+                </section>
               </section>
 
-              <button className="fab-button" onClick={openComposer} type="button">
-                Add climb
-              </button>
+              <div className="fab-stack">
+                <button className="secondary-button project-fab-button" onClick={openProjectComposer} type="button">
+                  Project
+                </button>
+                <button className="fab-button" onClick={openComposer} type="button">
+                  Add climb
+                </button>
+              </div>
             </>
           ) : null}
 
@@ -2133,39 +2547,53 @@ export default function HomePage() {
                           <h3>Circle standings</h3>
                         </div>
                       </div>
-                      <p className="muted friends-section-copy">Balanced around this week so recent climbing matters more than old volume.</p>
+                      <p className="muted friends-section-copy">Weekly score rewards showing up, sending volume, and variety, while compressing hard-climb XP so the race stays close.</p>
                       <div className="leaderboard-list">
                         {leaderboardEntries.map((entry, index) => {
                           const isExpanded = expandedLeaderboardId === entry.id;
                           return (
                             <article className={clsx("leaderboard-row", entry.isYou && "you", isExpanded && "expanded")} key={entry.id}>
-                              <button
-                                className="leaderboard-main"
-                                onClick={() => setExpandedLeaderboardId((current) => (current === entry.id ? "" : entry.id))}
-                                type="button"
-                              >
+                              <div className="leaderboard-main">
                                 <div className="leaderboard-rank">{index + 1}</div>
-                                {renderProfileAvatar(entry.name, entry.avatarUrl, entry.selectedEmblems, "friend-avatar")}
+                                {renderProfileAvatar(
+                                  entry.name,
+                                  entry.avatarUrl,
+                                  entry.selectedEmblems,
+                                  "friend-avatar",
+                                  entry.isYou ? null : () => setSelectedFriendId(entry.id)
+                                )}
                                 <div className="leaderboard-copy">
                                   <div className="friend-name-line">
                                     <strong>{entry.name}</strong>
                                     {entry.isYou ? <span className="mini-badge ready">You</span> : null}
                                   </div>
                                 </div>
-                                <div className="leaderboard-score">
+                                <button
+                                  className="leaderboard-score leaderboard-score-toggle"
+                                  onClick={() => setExpandedLeaderboardId((current) => (current === entry.id ? "" : entry.id))}
+                                  type="button"
+                                >
                                   <strong>{entry.score}</strong>
                                   <span>{isExpanded ? "hide" : "score"}</span>
-                                </div>
-                              </button>
+                                </button>
+                              </div>
                               {isExpanded ? (
                                 <div className="leaderboard-breakdown">
                                   <div className="leaderboard-breakdown-row">
-                                    <span>XP earned this week</span>
+                                    <span>Weekly XP score</span>
                                     <strong>{entry.breakdown.weeklyXpPoints}</strong>
+                                  </div>
+                                  <div className="leaderboard-breakdown-row">
+                                    <span>Sends bonus (max 7 this week)</span>
+                                    <strong>{entry.breakdown.sendPoints}</strong>
                                   </div>
                                   <div className="leaderboard-breakdown-row">
                                     <span>Active days bonus (max 4 this week)</span>
                                     <strong>{entry.breakdown.activeDaysPoints}</strong>
+                                  </div>
+                                  <div className="leaderboard-breakdown-row">
+                                    <span>Variety bonus ({entry.uniqueGrades7} grades this week)</span>
+                                    <strong>{entry.breakdown.varietyPoints}</strong>
                                   </div>
                                 </div>
                               ) : null}
@@ -2275,7 +2703,8 @@ export default function HomePage() {
                                           session.friendName,
                                           sessionFriend?.avatarUrl ?? null,
                                           sessionFriend?.selectedEmblems ?? [],
-                                          "friend-avatar friend-session-avatar"
+                                          "friend-avatar friend-session-avatar",
+                                          () => setSelectedFriendId(session.friendId)
                                         )}
                                         <div>
                                           <p className="eyebrow">{session.friendName}</p>
@@ -2958,12 +3387,12 @@ function renderProfileAvatar(
   name: string,
   avatarUrl: string | null | undefined,
   selectedEmblems: string[] | null | undefined,
-  className: string
+  className: string,
+  onClick?: (() => void) | null
 ) {
   const normalizedEmblems = (selectedEmblems ?? []).slice(0, 3);
-
-  return (
-    <div className="profile-avatar-wrap">
+  const avatarBody = (
+    <>
       {avatarUrl ? (
         <img alt={`${name} profile`} className={clsx(className, "profile-avatar-image")} src={avatarUrl} />
       ) : (
@@ -2974,8 +3403,18 @@ function renderProfileAvatar(
           {normalizedEmblems.map((emblemId) => renderEmblemBadge(emblemId, "small"))}
         </div>
       ) : null}
-    </div>
+    </>
   );
+
+  if (onClick) {
+    return (
+      <button aria-label={`Open ${name}'s profile`} className="profile-avatar-trigger profile-avatar-wrap" onClick={onClick} type="button">
+        {avatarBody}
+      </button>
+    );
+  }
+
+  return <div className="profile-avatar-wrap">{avatarBody}</div>;
 }
 
 function renderEmblemBadge(emblemId: string, size: "small" | "large") {

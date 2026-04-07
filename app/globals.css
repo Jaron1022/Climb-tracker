@@ -345,6 +345,45 @@ button {
   align-self: start;
 }
 
+.projects-panel {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.project-list {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.project-row {
+  display: grid;
+  gap: 0.8rem;
+  padding: 0.9rem 1rem;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface-control) 94%, transparent);
+}
+
+.project-row-main {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.project-row-meta {
+  margin: 0;
+}
+
+.project-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.project-action-button {
+  padding-inline: 0.95rem;
+}
+
 .history-toolbar {
   display: grid;
   gap: 0.7rem;
@@ -524,11 +563,22 @@ button {
   grid-template-columns: auto auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.8rem;
+}
+
+.leaderboard-score-toggle {
   padding: 0;
   border: 0;
   background: transparent;
   color: inherit;
-  text-align: left;
+  text-align: right;
+}
+
+.profile-avatar-trigger {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
 }
 
 .leaderboard-row.you {
@@ -3633,6 +3683,25 @@ button {
   transition: transform 150ms ease, box-shadow 150ms ease;
 }
 
+.fab-stack {
+  position: fixed;
+  right: 1rem;
+  bottom: 5.9rem;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.fab-stack .fab-button {
+  position: static;
+}
+
+.project-fab-button {
+  padding-inline: 1rem;
+  box-shadow: var(--shadow);
+}
+
 .fab-button:hover,
 .fab-button:focus-visible {
   transform: translateY(-1px) scale(1.02);
@@ -3809,6 +3878,16 @@ button {
   .fab-button {
     right: 0.8rem;
     bottom: 5.5rem;
+  }
+
+  .fab-stack {
+    right: 0.8rem;
+    bottom: 5.5rem;
+    gap: 0.55rem;
+  }
+
+  .project-fab-button {
+    padding-inline: 0.9rem;
   }
 
   .trend-graph-shell {

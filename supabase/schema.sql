@@ -38,6 +38,21 @@ create table if not exists public.climbs (
   created_at timestamptz not null default timezone('utc'::text, now())
 );
 
+create table if not exists public.projects (
+  id uuid primary key default gen_random_uuid(),
+  profile_id uuid not null references public.profiles (id) on delete cascade,
+  photo_url text,
+  grade text not null check (grade in ('VB', 'V0', 'V1', 'V2', 'V3', 'V4', 'V5', 'V6', 'V7', 'V8', 'V9', 'V10')),
+  grade_modifier text check (grade_modifier in ('-', '+') or grade_modifier is null),
+  style_tags text[] not null default '{}',
+  wall_name text,
+  notes text,
+  first_logged_on date not null,
+  last_worked_on date not null,
+  session_count integer not null default 1 check (session_count >= 1),
+  created_at timestamptz not null default timezone('utc'::text, now())
+);
+
 create table if not exists public.friendships (
   id uuid primary key default gen_random_uuid(),
   requester_id uuid not null references public.profiles (id) on delete cascade,
@@ -58,6 +73,7 @@ create table if not exists public.session_kudos (
 );
 
 create index if not exists climbs_profile_id_created_at_idx on public.climbs (profile_id, climbed_on desc, created_at desc);
+create index if not exists projects_profile_id_last_worked_idx on public.projects (profile_id, last_worked_on desc, created_at desc);
 create unique index if not exists friendships_unique_pair_idx on public.friendships (least(requester_id, addressee_id), greatest(requester_id, addressee_id));
 create index if not exists friendships_requester_idx on public.friendships (requester_id, status, created_at desc);
 create index if not exists friendships_addressee_idx on public.friendships (addressee_id, status, created_at desc);
@@ -67,6 +83,7 @@ create index if not exists session_kudos_sender_idx on public.session_kudos (sen
 
 alter table public.profiles enable row level security;
 alter table public.climbs enable row level security;
+alter table public.projects enable row level security;
 alter table public.friendships enable row level security;
 alter table public.session_kudos enable row level security;
 
@@ -134,6 +151,31 @@ with check (auth.uid() = profile_id);
 drop policy if exists "climbs_delete_own" on public.climbs;
 create policy "climbs_delete_own"
 on public.climbs
+for delete
+using (auth.uid() = profile_id);
+
+drop policy if exists "projects_select_own" on public.projects;
+create policy "projects_select_own"
+on public.projects
+for select
+using (auth.uid() = profile_id);
+
+drop policy if exists "projects_insert_own" on public.projects;
+create policy "projects_insert_own"
+on public.projects
+for insert
+with check (auth.uid() = profile_id);
+
+drop policy if exists "projects_update_own" on public.projects;
+create policy "projects_update_own"
+on public.projects
+for update
+using (auth.uid() = profile_id)
+with check (auth.uid() = profile_id);
+
+drop policy if exists "projects_delete_own" on public.projects;
+create policy "projects_delete_own"
+on public.projects
 for delete
 using (auth.uid() = profile_id);
 

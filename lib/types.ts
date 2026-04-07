@@ -46,6 +46,34 @@ export type ClimbInsert = {
   climbed_on: string;
 };
 
+export type ProjectRow = {
+  id: string;
+  profile_id: string;
+  photo_url: string | null;
+  grade: Grade;
+  grade_modifier?: GradeModifier;
+  style_tags: StyleTag[];
+  wall_name: string | null;
+  notes: string | null;
+  first_logged_on: string;
+  last_worked_on: string;
+  session_count: number;
+  created_at: string;
+};
+
+export type ProjectInsert = {
+  profile_id: string;
+  photo_url: string | null;
+  grade: Grade;
+  grade_modifier?: GradeModifier;
+  style_tags: StyleTag[];
+  wall_name: string | null;
+  notes: string | null;
+  first_logged_on: string;
+  last_worked_on: string;
+  session_count: number;
+};
+
 export type FriendshipStatus = "pending" | "accepted" | "declined";
 
 export type FriendshipRow = {
@@ -94,10 +122,13 @@ export type FriendSummary = {
   weeklyXp7: number;
   recentSends7: number;
   activeDays7: number;
+  uniqueGrades7: number;
   leaderboardScore: number;
   leaderboardBreakdown: {
     weeklyXpPoints: number;
+    sendPoints: number;
     activeDaysPoints: number;
+    varietyPoints: number;
   };
 };
 

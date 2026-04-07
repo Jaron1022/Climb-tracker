@@ -1,6 +1,6 @@
 import type { User } from "@supabase/supabase-js";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
-import type { ClimbInsert, ClimbRow, ProfileRow } from "@/lib/types";
+import type { ClimbInsert, ClimbRow, ProfileRow, ProjectInsert, ProjectRow } from "@/lib/types";
 
 export async function getCurrentUser() {
   const supabase = getSupabaseBrowserClient() as any;
@@ -249,9 +249,37 @@ export async function fetchClimbsForUser(userId: string) {
   return (data ?? []) as ClimbRow[];
 }
 
+export async function fetchProjectsForUser(userId: string) {
+  const supabase = getSupabaseBrowserClient() as any;
+  const { data, error } = await supabase
+    .from("projects")
+    .select("*")
+    .eq("profile_id", userId)
+    .order("last_worked_on", { ascending: false })
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []) as ProjectRow[];
+}
+
 export async function saveClimbForUser(userId: string, payload: Omit<ClimbInsert, "profile_id">) {
   const supabase = getSupabaseBrowserClient() as any;
   const { error } = await supabase.from("climbs").insert({
+    ...payload,
+    profile_id: userId
+  });
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function saveProjectForUser(userId: string, payload: Omit<ProjectInsert, "profile_id">) {
+  const supabase = getSupabaseBrowserClient() as any;
+  const { error } = await supabase.from("projects").insert({
     ...payload,
     profile_id: userId
   });
@@ -310,6 +338,57 @@ export async function deleteClimbForUser(userId: string, climbId: string) {
   }
 
   const { error } = await supabase.from("climbs").delete().eq("id", climbId).eq("profile_id", userId);
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function updateProjectSessionForUser(userId: string, projectId: string, lastWorkedOn: string, incrementSessionCount: boolean) {
+  const supabase = getSupabaseBrowserClient() as any;
+  const { data: existing, error: fetchError } = await supabase
+    .from("projects")
+    .select("session_count")
+    .eq("id", projectId)
+    .eq("profile_id", userId)
+    .single();
+
+  if (fetchError) {
+    throw fetchError;
+  }
+
+  const { error } = await supabase
+    .from("projects")
+    .update({
+      last_worked_on: lastWorkedOn,
+      session_count: incrementSessionCount ? (existing.session_count ?? 0) + 1 : existing.session_count
+    })
+    .eq("id", projectId)
+    .eq("profile_id", userId);
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function deleteProjectForUser(userId: string, projectId: string) {
+  const supabase = getSupabaseBrowserClient() as any;
+  const { data: existing, error: fetchError } = await supabase
+    .from("projects")
+    .select("photo_url")
+    .eq("id", projectId)
+    .eq("profile_id", userId)
+    .single();
+
+  if (fetchError) {
+    throw fetchError;
+  }
+
+  if (existing.photo_url && shouldUseR2()) {
+    await deletePhotoFromR2(existing.photo_url);
+  }
+
+  const { error } = await supabase.from("projects").delete().eq("id", projectId).eq("profile_id", userId);
 
   if (error) {
     throw error;

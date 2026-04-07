@@ -174,7 +174,8 @@ export async function fetchFriends(userId: string) {
       const friendProfile = profilesById.get(friendId);
 
       const activeDays7 = new Set(recentClimbs.map((climb) => climb.climbed_on)).size;
-      const leaderboardBreakdown = getLeaderboardScoreBreakdown(weeklyXp, activeDays7);
+      const uniqueGrades7 = new Set(recentClimbs.map((climb) => climb.grade)).size;
+      const leaderboardBreakdown = getLeaderboardScoreBreakdown(weeklyXp, recentClimbs.length, activeDays7, uniqueGrades7);
 
       return {
         friendshipId: item.id,
@@ -190,6 +191,7 @@ export async function fetchFriends(userId: string) {
         weeklyXp7: weeklyXp,
         recentSends7: recentClimbs.length,
         activeDays7,
+        uniqueGrades7,
         leaderboardScore: sumLeaderboardScoreBreakdown(leaderboardBreakdown),
         leaderboardBreakdown
       };
@@ -312,23 +314,30 @@ export async function fetchReceivedSessionKudos(userId: string) {
   }, {});
 }
 
-export function buildLeaderboardScore(weeklyXp7: number, activeDays7: number) {
-  return sumLeaderboardScoreBreakdown(getLeaderboardScoreBreakdown(weeklyXp7, activeDays7));
+export function buildLeaderboardScore(weeklyXp7: number, recentSends7: number, activeDays7: number, uniqueGrades7: number) {
+  return sumLeaderboardScoreBreakdown(getLeaderboardScoreBreakdown(weeklyXp7, recentSends7, activeDays7, uniqueGrades7));
 }
 
-export function getLeaderboardScoreBreakdown(weeklyXp7: number, activeDays7: number) {
+export function getLeaderboardScoreBreakdown(weeklyXp7: number, recentSends7: number, activeDays7: number, uniqueGrades7: number) {
   const cappedActiveDays = Math.min(Math.max(0, activeDays7), 4);
+  const cappedSends = Math.min(Math.max(0, recentSends7), 7);
+  const cappedVariety = Math.min(Math.max(0, uniqueGrades7), 4);
+  const compressedXp = weeklyXp7 <= 0 ? 0 : Math.min(45, Math.round(Math.log2(weeklyXp7 + 1) * 5));
   return {
-    weeklyXpPoints: Math.max(0, weeklyXp7),
-    activeDaysPoints: cappedActiveDays * 18
+    weeklyXpPoints: compressedXp,
+    sendPoints: cappedSends * 5,
+    activeDaysPoints: cappedActiveDays * 10,
+    varietyPoints: cappedVariety * 5
   };
 }
 
 function sumLeaderboardScoreBreakdown(breakdown: {
   weeklyXpPoints: number;
+  sendPoints: number;
   activeDaysPoints: number;
+  varietyPoints: number;
 }) {
-  return breakdown.weeklyXpPoints + breakdown.activeDaysPoints;
+  return breakdown.weeklyXpPoints + breakdown.sendPoints + breakdown.activeDaysPoints + breakdown.varietyPoints;
 }
 
 function getRecentClimbs(climbs: ClimbRow[], days: number) {
