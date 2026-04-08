@@ -48,6 +48,7 @@ import {
   updateSelectedTheme,
   updateDisplayName,
   updateClimbForUser,
+  updateProjectForUser,
   updateProjectSessionForUser
 } from "@/lib/supabase-store";
 import type {
@@ -100,6 +101,7 @@ export default function HomePage() {
   const [selectedPhotoUrl, setSelectedPhotoUrl] = useState<string | null>(null);
   const [climbPendingDelete, setClimbPendingDelete] = useState<ClimbRow | null>(null);
   const [editingClimb, setEditingClimb] = useState<ClimbRow | null>(null);
+  const [editingProject, setEditingProject] = useState<ProjectRow | null>(null);
   const [isComposerOpen, setIsComposerOpen] = useState(false);
   const [isProjectComposerOpen, setIsProjectComposerOpen] = useState(false);
   const [projectPendingSend, setProjectPendingSend] = useState<ProjectRow | null>(null);
@@ -217,6 +219,7 @@ export default function HomePage() {
       setSeenInboxItemIds([]);
       setPendingOutgoingFriendIds([]);
       setEditingClimb(null);
+      setEditingProject(null);
       setIsComposerOpen(false);
       setActiveView("home");
       return;
@@ -769,6 +772,7 @@ export default function HomePage() {
       setForm(createDefaultForm());
       setPhotoFile(null);
       setEditingClimb(null);
+      setEditingProject(null);
       if (photoInputRef.current) {
         photoInputRef.current.value = "";
       }
@@ -802,7 +806,7 @@ export default function HomePage() {
       setError("");
       setSuccess("");
 
-      let photoUrl = "";
+      let photoUrl = editingProject?.photo_url ?? "";
       if (photoFile) {
         photoUrl = await uploadPhoto(photoFile);
       }
@@ -814,15 +818,20 @@ export default function HomePage() {
         style_tags: form.styleTags,
         wall_name: form.color.trim() || null,
         notes: form.notes.trim() || null,
-        first_logged_on: form.date,
+        first_logged_on: editingProject?.first_logged_on ?? form.date,
         last_worked_on: form.date,
-        session_count: 1
+        session_count: editingProject?.session_count ?? 1
       };
 
-      await saveProjectForUser(activeProfileId, projectPayload);
+      if (editingProject) {
+        await updateProjectForUser(activeProfileId, editingProject.id, projectPayload);
+      } else {
+        await saveProjectForUser(activeProfileId, projectPayload);
+      }
       await refreshProjectsView();
       setForm(createDefaultForm());
       setPhotoFile(null);
+      setEditingProject(null);
       if (photoInputRef.current) {
         photoInputRef.current.value = "";
       }
@@ -830,7 +839,7 @@ export default function HomePage() {
         cameraCaptureInputRef.current.value = "";
       }
       setIsProjectComposerOpen(false);
-      setSuccess("Project added.");
+      setSuccess(editingProject ? "Project saved." : "Project added.");
     } catch (err) {
       setError(getMessage(err));
     } finally {
@@ -908,6 +917,7 @@ export default function HomePage() {
 
   function openComposer() {
     setEditingClimb(null);
+    setEditingProject(null);
     setProjectPendingSend(null);
     setForm(createDefaultForm());
     setPhotoFile(null);
@@ -922,6 +932,7 @@ export default function HomePage() {
 
   function openProjectComposer() {
     setEditingClimb(null);
+    setEditingProject(null);
     setProjectPendingSend(null);
     setForm(createDefaultForm());
     setPhotoFile(null);
@@ -936,6 +947,7 @@ export default function HomePage() {
 
   function openEditor(climb: ClimbRow) {
     setEditingClimb(climb);
+    setEditingProject(null);
     setProjectPendingSend(null);
     setForm({
       grade: climb.grade,
@@ -959,6 +971,7 @@ export default function HomePage() {
   function handleMarkProjectSent(project: ProjectRow) {
     setProjectPendingSend(project);
     setEditingClimb(null);
+    setEditingProject(null);
     setForm({
       grade: project.grade,
       flashed: false,
@@ -979,8 +992,31 @@ export default function HomePage() {
     setIsComposerOpen(true);
   }
 
+  function openProjectEditor(project: ProjectRow) {
+    setEditingClimb(null);
+    setProjectPendingSend(null);
+    setEditingProject(project);
+    setForm({
+      grade: project.grade,
+      flashed: false,
+      gradeModifier: project.grade_modifier ?? null,
+      styleTags: project.style_tags,
+      color: project.wall_name ?? "",
+      notes: project.notes ?? "",
+      date: project.last_worked_on
+    });
+    setPhotoFile(null);
+    if (photoInputRef.current) {
+      photoInputRef.current.value = "";
+    }
+    if (cameraCaptureInputRef.current) {
+      cameraCaptureInputRef.current.value = "";
+    }
+    setIsProjectComposerOpen(true);
+  }
+
   const stats = useMemo(() => buildStats(climbs), [climbs]);
-  const progressStats = useMemo(() => buildProgressStats(climbs, progressRange, sessionNotesByDate), [climbs, progressRange, sessionNotesByDate]);
+  const progressStats = useMemo(() => buildProgressStats(climbs, projects, progressRange, sessionNotesByDate), [climbs, projects, progressRange, sessionNotesByDate]);
   const dailyRecapKudosCount = progressStats.dailyRecap ? receivedSessionKudosByDate[progressStats.dailyRecap.climbedOn] ?? 0 : 0;
   const unlockedEmblems = useMemo(() => getUnlockedEmblems(climbs), [climbs]);
   const unlockedEmblemIds = useMemo(() => unlockedEmblems.map((emblem) => emblem.id), [unlockedEmblems]);
@@ -1082,7 +1118,7 @@ export default function HomePage() {
     () => buildFriendSessions(friendFeed, sessionKudosById, friendSessionNotesById),
     [friendFeed, sessionKudosById, friendSessionNotesById]
   );
-  const historySessions = useMemo(() => buildHistorySessions(climbs, sessionNotesByDate), [climbs, sessionNotesByDate]);
+  const historySessions = useMemo(() => buildHistorySessions(climbs, projects, sessionNotesByDate), [climbs, projects, sessionNotesByDate]);
   const friendLookup = useMemo(
     () =>
       new Map(
@@ -1265,7 +1301,7 @@ export default function HomePage() {
 
         <div className="feed history-feed">
           {historySessions.length === 0 ? (
-            <p className="empty-copy">No sessions yet. Log a climb and your climbing days will show up here.</p>
+            <p className="empty-copy">No sessions yet. Log a climb or work a project and your climbing days will show up here.</p>
           ) : (
             historySessions.map((session) => {
               const isExpanded = expandedFriendSessionId === session.id;
@@ -1308,8 +1344,9 @@ export default function HomePage() {
                       </button>
                     </div>
                     <div className="tag-row friend-session-summary">
-                      <span className="mini-badge">{session.sendCount} sends</span>
-                      <span className="mini-badge ready">+{session.totalXp} XP</span>
+                      {session.sendCount > 0 ? <span className="mini-badge">{session.sendCount} sends</span> : null}
+                      {session.projectCount > 0 ? <span className="mini-badge">{session.projectCount} project{session.projectCount > 1 ? "s" : ""}</span> : null}
+                      {session.totalXp > 0 ? <span className="mini-badge ready">+{session.totalXp} XP</span> : null}
                       <span className="mini-badge">Top {session.hardestLabel}</span>
                       {session.flashCount > 0 ? <span className="mini-badge ready">{session.flashCount} flash{session.flashCount > 1 ? "es" : ""}</span> : null}
                     </div>
@@ -1325,6 +1362,53 @@ export default function HomePage() {
                     </div>
                     {isExpanded ? (
                       <div className="friend-session-climb-list">
+                        {session.projects.map((project) =>
+                          project.photo_url ? (
+                            <button
+                              className="friend-session-climb-row is-clickable"
+                              key={`project-${project.id}`}
+                              onClick={() => setSelectedPhotoUrl(project.photo_url)}
+                              type="button"
+                            >
+                              <div>
+                                <div className="history-title-row">
+                                  <strong>
+                                    {project.grade}
+                                    {project.grade_modifier ?? ""}
+                                  </strong>
+                                  {project.wall_name ? (
+                                    <span className={clsx("history-description", getColorChipClass(project.wall_name))}>
+                                      {project.wall_name}
+                                    </span>
+                                  ) : null}
+                                  <span className="mini-badge">project</span>
+                                </div>
+                                {project.notes ? <p className="muted">{project.notes}</p> : null}
+                              </div>
+                              <div className="friend-session-climb-aside">
+                                <span className="friend-session-photo-hint">view photo</span>
+                              </div>
+                            </button>
+                          ) : (
+                            <div className="friend-session-climb-row" key={`project-${project.id}`}>
+                              <div>
+                                <div className="history-title-row">
+                                  <strong>
+                                    {project.grade}
+                                    {project.grade_modifier ?? ""}
+                                  </strong>
+                                  {project.wall_name ? (
+                                    <span className={clsx("history-description", getColorChipClass(project.wall_name))}>
+                                      {project.wall_name}
+                                    </span>
+                                  ) : null}
+                                  <span className="mini-badge">project</span>
+                                </div>
+                                {project.notes ? <p className="muted">{project.notes}</p> : null}
+                              </div>
+                            </div>
+                          )
+                        )}
                         {session.climbs.map((climb) =>
                           climb.photo_url ? (
                             <button
@@ -1564,7 +1648,7 @@ export default function HomePage() {
                   : "No climbs yet. Tap Add climb to log your first send."
                 : historyTagQuery.trim()
                   ? `No ${historyGradeFilter} climbs match "${historyTagQuery.trim()}".`
-                  : `No ${historyGradeFilter} climbs yet. Pick another filter or add one.`}
+                  : `No ${historyGradeFilter} climbs yet. Try another filter or log one.`}
             </p>
           ) : (
             climbsToShow.map((climb) => (
@@ -1748,7 +1832,7 @@ export default function HomePage() {
                   Close
                 </button>
               </div>
-              <p className="muted emblem-picker-copy">Choose up to 3 emblems to show on your profile. Unlocked emblems reflect your climbing milestones.</p>
+              <p className="muted emblem-picker-copy">Choose up to 3 emblems for your profile. Unlocked emblems reflect your climbing milestones.</p>
               <div className="emblem-selected-row">
                 {[0, 1, 2].map((slot) => {
                   const emblemId = selectedEmblemDraft[slot];
@@ -1896,7 +1980,7 @@ export default function HomePage() {
                   })}
                 </div>
               ) : (
-                <p className="empty-copy">No emblems selected yet.</p>
+                <p className="empty-copy">No emblems selected.</p>
               )}
             </section>
 
@@ -2237,7 +2321,7 @@ export default function HomePage() {
             <div className="section-title-row composer-header">
               <div>
                 <p className="eyebrow">Project</p>
-                <h2>Log a project</h2>
+                <h2>{editingProject ? "Edit project" : "Log a project"}</h2>
               </div>
               <button className="secondary-button" onClick={() => setIsProjectComposerOpen(false)} type="button">
                 Close
@@ -2275,7 +2359,7 @@ export default function HomePage() {
                   onChange={handlePhotoChange}
                   className="hidden-file-input"
                 />
-                <small className="muted">{photoFile ? `${photoFile.name} ready to upload.` : ""}</small>
+                <small className="muted">{photoFile ? `${photoFile.name} ready to upload.` : editingProject?.photo_url ? "Current photo saved." : ""}</small>
               </label>
 
               <label className="field">
@@ -2378,7 +2462,7 @@ export default function HomePage() {
               </label>
 
               <button className="primary-button" disabled={!canSaveClimb} type="submit">
-                {activeAction === "project" ? "Saving project..." : "Save project"}
+                {activeAction === "project" ? "Saving project..." : editingProject ? "Save project" : "Add project"}
               </button>
             </form>
           </section>
@@ -2583,13 +2667,33 @@ export default function HomePage() {
                           : `Last session | ${prettyDate(progressStats.dailyRecap.climbedOn)}`}
                       </p>
                       <div className="daily-recap-pill-row dashboard-recap-pills">
-                        <span className="daily-pill">{progressStats.dailyRecap.sends} sends</span>
-                        <span className="daily-pill">+{progressStats.dailyRecap.totalXp} XP</span>
+                        {progressStats.dailyRecap.sends > 0 ? <span className="daily-pill">{progressStats.dailyRecap.sends} sends</span> : null}
+                        {progressStats.dailyRecap.projectCount > 0 ? <span className="daily-pill">{progressStats.dailyRecap.projectCount} project{progressStats.dailyRecap.projectCount > 1 ? "s" : ""}</span> : null}
+                        {progressStats.dailyRecap.totalXp > 0 ? <span className="daily-pill">+{progressStats.dailyRecap.totalXp} XP</span> : null}
                         {progressStats.dailyRecap.topGrade ? <span className="daily-pill">Top send {progressStats.dailyRecap.topGrade}</span> : null}
                         {dailyRecapKudosCount > 0 ? <span className="daily-pill daily-pill-kudos">{dailyRecapKudosCount} kudos</span> : null}
                       </div>
                       {progressStats.dailyRecap.sessionNote ? (
                         <p className="muted helper-copy">{progressStats.dailyRecap.sessionNote}</p>
+                      ) : null}
+                      {progressStats.dailyRecap.projectsWorked.length > 0 ? (
+                        <div className="daily-project-list">
+                          {progressStats.dailyRecap.projectsWorked.map((project) => (
+                            <div className="daily-project-row" key={project.id}>
+                              <div className="history-title-row">
+                                <strong>
+                                  {project.grade}
+                                  {project.grade_modifier ?? ""}
+                                </strong>
+                                {project.wall_name ? (
+                                  <span className={clsx("history-description", getColorChipClass(project.wall_name))}>{project.wall_name}</span>
+                                ) : null}
+                                <span className="mini-badge">project</span>
+                              </div>
+                              {project.notes ? <p className="muted daily-project-note">{project.notes}</p> : null}
+                            </div>
+                          ))}
+                        </div>
                       ) : null}
                       <div className="daily-recap-list">
                         {progressStats.dailyRecap.groups.map((group) => (
@@ -2627,19 +2731,37 @@ export default function HomePage() {
                   {projects.length > 0 ? (
                     <div className="project-list">
                       {projects.slice(0, 4).map((project) => (
-                        <article className="project-row" key={project.id}>
-                          <div className="project-row-main">
-                            <strong>
-                              {project.grade}
-                              {project.grade_modifier ?? ""}
-                              {project.wall_name ? ` • ${project.wall_name}` : ""}
-                            </strong>
+                        <article className="climb-card project-row project-card" key={project.id}>
+                          {project.photo_url ? (
+                            <button className="thumbnail-button" onClick={() => setSelectedPhotoUrl(project.photo_url)} type="button">
+                              <img alt={`${project.grade} project`} className="climb-photo" src={project.photo_url} />
+                            </button>
+                          ) : null}
+                          <div className="climb-content project-row-main">
+                            <div className="history-title-row">
+                              <strong>
+                                {project.grade}
+                                {project.grade_modifier ?? ""}
+                              </strong>
+                              {project.wall_name ? (
+                                <span className={clsx("history-description", getColorChipClass(project.wall_name))}>{project.wall_name}</span>
+                              ) : null}
+                              <span className="mini-badge">project</span>
+                            </div>
                             <p className="muted project-row-meta">
                               {project.session_count} session{project.session_count === 1 ? "" : "s"} • last worked {prettyDate(project.last_worked_on)}
                             </p>
                             {project.notes ? <p className="muted">{project.notes}</p> : null}
                           </div>
                           <div className="project-row-actions">
+                            <button
+                              className="secondary-button project-action-button"
+                              disabled={loading}
+                              onClick={() => openProjectEditor(project)}
+                              type="button"
+                            >
+                              Edit project
+                            </button>
                             <button
                               className="secondary-button project-action-button"
                               disabled={loading}
@@ -2669,7 +2791,7 @@ export default function HomePage() {
                       ))}
                     </div>
                   ) : (
-                    <p className="empty-copy">Projects give you a place to log climbs you’re working on without earning XP yet.</p>
+                    <p className="empty-copy">Projects give you a place to track climbs you’re working on without earning XP yet.</p>
                   )}
                 </section>
               </section>
@@ -2886,7 +3008,7 @@ export default function HomePage() {
                     </label>
                     <div className="friends-search-results">
                       {friendSearch.trim().length === 0 ? (
-                        <p className="empty-copy">Search for a climber by display name to send a friend request.</p>
+                        <p className="empty-copy">Search by display name to send a friend request.</p>
                       ) : friendResults.length === 0 ? (
                         <p className="empty-copy">No climbers matched that search.</p>
                       ) : (
@@ -2901,7 +3023,7 @@ export default function HomePage() {
                                 {renderProfileAvatar(result.display_name, result.avatar_url, result.selected_emblems, "friend-avatar")}
                                 <div>
                                   <strong>{result.display_name}</strong>
-                                  <p className="muted friend-row-meta">Tap below to send a friend request.</p>
+                                  <p className="muted friend-row-meta">Send a friend request to connect.</p>
                                 </div>
                               </div>
                               <button
@@ -3040,7 +3162,7 @@ export default function HomePage() {
                         </div>
                       </div>
                       {friends.length === 0 ? (
-                        <p className="empty-copy">Once requests are accepted, your friends will show up here.</p>
+                        <p className="empty-copy">Accepted friends will show up here.</p>
                       ) : (
                         <div className="friends-list">
                           {friends.map((friend) => (
@@ -3082,7 +3204,7 @@ export default function HomePage() {
                         </div>
                       </div>
                       {friendFeed.length === 0 ? (
-                        <p className="empty-copy">Accepted friends will start showing up here once they log climbs.</p>
+                        <p className="empty-copy">Friend sessions will show up here once your circle starts logging climbs.</p>
                       ) : (
                         <>
                           <div className="feed friend-feed">
@@ -3696,7 +3818,7 @@ function sessionNotesToMap(notes: SessionNoteRow[]) {
   }, {});
 }
 
-function buildHistorySessions(climbs: ClimbRow[], sessionNotesByDate: Record<string, string>) {
+function buildHistorySessions(climbs: ClimbRow[], projects: ProjectRow[], sessionNotesByDate: Record<string, string>) {
   const sessions = new Map<
     string,
     {
@@ -3706,9 +3828,11 @@ function buildHistorySessions(climbs: ClimbRow[], sessionNotesByDate: Record<str
       hardestLabel: string;
       headline: string;
       sendCount: number;
+      projectCount: number;
       flashCount: number;
       totalXp: number;
       climbs: ClimbRow[];
+      projects: ProjectRow[];
       bestSort: number;
     }
   >();
@@ -3726,9 +3850,11 @@ function buildHistorySessions(climbs: ClimbRow[], sessionNotesByDate: Record<str
         hardestLabel: `${climb.grade}${climb.grade_modifier ?? ""}`,
         headline: `${climb.climbed_on}`,
         sendCount: 1,
+        projectCount: 0,
         flashCount: Number(Boolean(climb.flashed)),
         totalXp: climbToXp(climb.grade, Boolean(climb.flashed), climb.grade_modifier ?? null),
         climbs: [climb],
+        projects: [],
         bestSort: climbSort
       });
       return;
@@ -3749,20 +3875,62 @@ function buildHistorySessions(climbs: ClimbRow[], sessionNotesByDate: Record<str
     }
   });
 
+  projects.forEach((project) => {
+    const sessionId = `history:${project.last_worked_on}`;
+    const current = sessions.get(sessionId);
+    const projectSort = climbSortScoreFromProject(project);
+
+    if (!current) {
+      sessions.set(sessionId, {
+        id: sessionId,
+        climbedOn: project.last_worked_on,
+        photoUrls: project.photo_url ? [project.photo_url] : [],
+        hardestLabel: `${project.grade}${project.grade_modifier ?? ""}`,
+        headline: `${project.last_worked_on}`,
+        sendCount: 0,
+        projectCount: 1,
+        flashCount: 0,
+        totalXp: 0,
+        climbs: [],
+        projects: [project],
+        bestSort: projectSort
+      });
+      return;
+    }
+
+    current.projectCount += 1;
+    current.projects.push(project);
+
+    if (project.photo_url && !current.photoUrls.includes(project.photo_url) && current.photoUrls.length < 4) {
+      current.photoUrls.push(project.photo_url);
+    }
+
+    if (projectSort > current.bestSort) {
+      current.bestSort = projectSort;
+      current.hardestLabel = `${project.grade}${project.grade_modifier ?? ""}`;
+    }
+  });
+
   return Array.from(sessions.values())
     .map((session) => ({
       ...session,
-      headline: `${session.sendCount} sends`,
+      headline:
+        session.sendCount > 0
+          ? `${session.sendCount} send${session.sendCount > 1 ? "s" : ""}`
+          : `${session.projectCount} project${session.projectCount > 1 ? "s" : ""}`,
       note: sessionNotesByDate[session.climbedOn] ?? "",
-      photoUrls: buildHistorySessionPhotoCollage(session.climbs),
-      climbs: session.climbs.slice().sort((left, right) => climbSortScore(right) - climbSortScore(left))
+      photoUrls: buildHistorySessionPhotoCollage(session.climbs, session.projects),
+      climbs: session.climbs.slice().sort((left, right) => climbSortScore(right) - climbSortScore(left)),
+      projects: session.projects.slice().sort((left, right) => climbSortScoreFromProject(right) - climbSortScoreFromProject(left))
     }))
     .sort((left, right) => right.climbedOn.localeCompare(left.climbedOn));
 }
 
-function buildHistorySessionPhotoCollage(climbs: ClimbRow[]) {
-  const rankedPhotos = climbs
-    .filter((climb): climb is ClimbRow & { photo_url: string } => Boolean(climb.photo_url))
+function buildHistorySessionPhotoCollage(climbs: ClimbRow[], projects: ProjectRow[]) {
+  const rankedPhotos = [
+    ...climbs.filter((climb): climb is ClimbRow & { photo_url: string } => Boolean(climb.photo_url)),
+    ...projects.filter((project): project is ProjectRow & { photo_url: string } => Boolean(project.photo_url))
+  ]
     .slice()
     .sort((left, right) => historySessionPhotoScore(right) - historySessionPhotoScore(left));
 
@@ -3780,12 +3948,20 @@ function buildHistorySessionPhotoCollage(climbs: ClimbRow[]) {
   return uniquePhotos;
 }
 
-function historySessionPhotoScore(climb: ClimbRow) {
-  const base = climbSortScore(climb) * 100;
-  const noteBonus = climb.notes ? 12 : 0;
-  const flashBonus = climb.flashed ? 6 : 0;
-  const colorBonus = climb.wall_name ? 2 : 0;
+function historySessionPhotoScore(entry: (ClimbRow | ProjectRow) & { photo_url: string }) {
+  const base = "flashed" in entry ? climbSortScore(entry) * 100 : climbSortScoreFromProject(entry) * 100;
+  const noteBonus = entry.notes ? 12 : 0;
+  const flashBonus = "flashed" in entry && entry.flashed ? 6 : 0;
+  const colorBonus = entry.wall_name ? 2 : 0;
   return base + noteBonus + flashBonus + colorBonus;
+}
+
+function climbSortScoreFromProject(project: Pick<ProjectRow, "grade" | "grade_modifier" | "notes">) {
+  const gradeScore = CLIMB_GRADES.indexOf(project.grade) * 10;
+  const modifierScore = project.grade_modifier === "+" ? 2 : project.grade_modifier === "-" ? 0 : 1;
+  const noteScore = project.notes ? 1 : 0;
+
+  return gradeScore + modifierScore + noteScore;
 }
 
 function buildFriendSessions(

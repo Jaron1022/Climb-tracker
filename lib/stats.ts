@@ -1,5 +1,5 @@
 import { CLIMB_GRADES, climbToXp, formatLocalDateKey, levelFromXp, xpIntoCurrentLevel, xpNeededForNextLevel } from "./xp";
-import type { ClimbRow, Grade, GradeModifier, StyleTag } from "./types";
+import type { ClimbRow, Grade, GradeModifier, ProjectRow, StyleTag } from "./types";
 
 export const PROGRESS_RANGES = ["1W", "1M", "3M", "1Y", "ALL"] as const;
 
@@ -57,11 +57,16 @@ export function buildStats(climbs: ClimbRow[]) {
   };
 }
 
-export function buildProgressStats(climbs: ClimbRow[], range: ProgressRange, sessionNotesByDate: Record<string, string> = {}) {
+export function buildProgressStats(
+  climbs: ClimbRow[],
+  projects: ProjectRow[],
+  range: ProgressRange,
+  sessionNotesByDate: Record<string, string> = {}
+) {
   const completedClimbs = climbs.filter((climb) => climb.status === "completed");
   const filteredClimbs = filterClimbsByRange(completedClimbs, range);
   const { buckets, cadenceLabel } = buildProgressBuckets(filteredClimbs, range);
-  const dailyRecap = buildDailyRecap(completedClimbs, sessionNotesByDate);
+  const dailyRecap = buildDailyRecap(completedClimbs, projects, sessionNotesByDate);
   const activeWeeks = countUniqueWeeks(filteredClimbs);
   const totalWeeks = countCalendarWeeksInRange(range, filteredClimbs);
   const flashedClimbs = filteredClimbs.filter((climb) => climb.flashed);
@@ -493,17 +498,23 @@ function formatPersonalBest(climb: ClimbRow) {
   return `${climb.grade}${climb.grade_modifier ?? ""}${flashText}`;
 }
 
-function buildDailyRecap(climbs: ClimbRow[], sessionNotesByDate: Record<string, string>) {
-  if (climbs.length === 0) {
+function buildDailyRecap(climbs: ClimbRow[], projects: ProjectRow[], sessionNotesByDate: Record<string, string>) {
+  const allSessionDates = [...climbs.map((climb) => climb.climbed_on), ...projects.map((project) => project.last_worked_on)].filter(Boolean);
+
+  if (allSessionDates.length === 0) {
     return null;
   }
 
   const todayKey = formatLocalDateKey(new Date());
-  const mostRecentDate = climbs.reduce((latest, climb) => (climb.climbed_on > latest ? climb.climbed_on : latest), climbs[0].climbed_on);
+  const mostRecentDate = allSessionDates.reduce((latest, date) => (date > latest ? date : latest), allSessionDates[0]);
   const dayClimbs = climbs
     .filter((climb) => climb.climbed_on === mostRecentDate)
     .slice()
     .sort((left, right) => compareClimbsForBest(right, left));
+  const dayProjects = projects
+    .filter((project) => project.last_worked_on === mostRecentDate)
+    .slice()
+    .sort((left, right) => compareProjectsForBest(right, left));
 
   const totalXp = dayClimbs.reduce(
     (total, climb) => total + climbToXp(climb.grade, Boolean(climb.flashed), climb.grade_modifier ?? null),
@@ -521,11 +532,13 @@ function buildDailyRecap(climbs: ClimbRow[], sessionNotesByDate: Record<string, 
     sessionNote: sessionNotesByDate[mostRecentDate] ?? "",
     totalXp,
     sends: dayClimbs.length,
+    projectCount: dayProjects.length,
+    projectsWorked: dayProjects,
     flashedCount,
     topGrade: topClimb ? `${topClimb.grade}${topClimb.grade_modifier ?? ""}` : null,
     topStyle,
-    headline: buildDailyRecapHeadline(dayClimbs.length, totalXp, flashedCount),
-    subheadline: buildDailyRecapSubheadline(dayClimbs.length, topClimb ? `${topClimb.grade}${topClimb.grade_modifier ?? ""}` : null),
+    headline: buildDailyRecapHeadline(dayClimbs.length, dayProjects.length, totalXp, flashedCount),
+    subheadline: buildDailyRecapSubheadline(dayClimbs.length, dayProjects.length, topClimb ? `${topClimb.grade}${topClimb.grade_modifier ?? ""}` : null),
     groups: groups.map((group) => ({
       ...group,
       fillPercent: (group.count / maxGroupCount) * 100
@@ -594,7 +607,11 @@ function parseGradeLabel(label: string) {
   };
 }
 
-function buildDailyRecapHeadline(sends: number, totalXp: number, flashedCount: number) {
+function buildDailyRecapHeadline(sends: number, projectCount: number, totalXp: number, flashedCount: number) {
+  if (sends === 0 && projectCount > 0) {
+    return "Project session";
+  }
+
   if (flashedCount > 0 && sends > 1) {
     return "Strong session";
   }
@@ -614,7 +631,11 @@ function buildDailyRecapHeadline(sends: number, totalXp: number, flashedCount: n
   return "Session recap";
 }
 
-function buildDailyRecapSubheadline(sends: number, topGrade: string | null) {
+function buildDailyRecapSubheadline(sends: number, projectCount: number, topGrade: string | null) {
+  if (sends === 0 && projectCount > 0) {
+    return `${projectCount} project${projectCount > 1 ? "s" : ""} worked with no send logged yet.`;
+  }
+
   if (topGrade && sends > 1) {
     return `${sends} sends on the board, led by ${topGrade}.`;
   }
@@ -624,6 +645,15 @@ function buildDailyRecapSubheadline(sends: number, topGrade: string | null) {
   }
 
   return "Every session you track makes the bigger picture clearer.";
+}
+
+function compareProjectsForBest(left: ProjectRow, right: ProjectRow) {
+  const gradeDelta = CLIMB_GRADES.indexOf(left.grade) - CLIMB_GRADES.indexOf(right.grade);
+  if (gradeDelta !== 0) {
+    return gradeDelta;
+  }
+
+  return modifierRank(left.grade_modifier ?? null) - modifierRank(right.grade_modifier ?? null);
 }
 
 function mostCommonTag(climbs: ClimbRow[]) {

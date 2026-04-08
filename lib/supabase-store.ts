@@ -343,6 +343,37 @@ export async function saveProjectForUser(userId: string, payload: Omit<ProjectIn
   }
 }
 
+export async function updateProjectForUser(userId: string, projectId: string, payload: Omit<ProjectInsert, "profile_id">) {
+  const supabase = getSupabaseBrowserClient() as any;
+  const { data: existing, error: fetchError } = await supabase
+    .from("projects")
+    .select("photo_url")
+    .eq("id", projectId)
+    .eq("profile_id", userId)
+    .single();
+
+  if (fetchError) {
+    throw fetchError;
+  }
+
+  if (existing.photo_url && existing.photo_url !== payload.photo_url && shouldUseR2()) {
+    await deletePhotoFromR2(existing.photo_url);
+  }
+
+  const { error } = await supabase
+    .from("projects")
+    .update({
+      ...payload,
+      profile_id: userId
+    })
+    .eq("id", projectId)
+    .eq("profile_id", userId);
+
+  if (error) {
+    throw error;
+  }
+}
+
 export async function updateClimbForUser(userId: string, climbId: string, payload: Omit<ClimbInsert, "profile_id">) {
   const supabase = getSupabaseBrowserClient() as any;
   const { data: existing, error: fetchError } = await supabase

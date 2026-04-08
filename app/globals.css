@@ -359,7 +359,7 @@ button {
 .project-row {
   display: grid;
   gap: 0.8rem;
-  padding: 0.9rem 1rem;
+  padding: 0;
   border-radius: 20px;
   border: 1px solid var(--line);
   background: color-mix(in srgb, var(--surface-control) 94%, transparent);
@@ -368,6 +368,10 @@ button {
 .project-row-main {
   display: grid;
   gap: 0.35rem;
+}
+
+.project-card .project-row-main {
+  padding: 1rem 1rem 0;
 }
 
 .project-row-meta {
@@ -379,6 +383,7 @@ button {
   flex-wrap: wrap;
   gap: 0.65rem;
   align-items: center;
+  padding: 0 1rem 1rem;
 }
 
 .project-action-button {
@@ -1981,6 +1986,23 @@ button {
   z-index: 1;
   display: grid;
   gap: 0.65rem;
+}
+
+.daily-project-list {
+  display: grid;
+  gap: 0.7rem;
+  margin-bottom: 0.85rem;
+}
+
+.daily-project-row {
+  padding: 0.8rem 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--line) 86%, transparent);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--surface-control) 94%, transparent);
+}
+
+.daily-project-note {
+  margin: 0.45rem 0 0;
 }
 
 .daily-recap-row {
