@@ -134,6 +134,7 @@ export default function HomePage() {
   const [progressRange, setProgressRange] = useState<ProgressRange>("ALL");
   const [isLandscapePhone, setIsLandscapePhone] = useState(false);
   const [isInboxOpen, setIsInboxOpen] = useState(false);
+  const inboxSeenStorageKey = activeProfileId ? `climb:inbox-seen:${activeProfileId}` : "";
   const feedbackToast = error
     ? { type: "error" as const, text: error }
     : success
@@ -1123,6 +1124,31 @@ export default function HomePage() {
   const canSaveClimb = Boolean(activeProfileId) && !loading && !booting;
 
   useEffect(() => {
+    if (!activeProfileId || typeof window === "undefined") {
+      return;
+    }
+
+    try {
+      const stored = window.localStorage.getItem(inboxSeenStorageKey);
+      setSeenInboxItemIds(stored ? JSON.parse(stored) : []);
+    } catch {
+      setSeenInboxItemIds([]);
+    }
+  }, [activeProfileId, inboxSeenStorageKey]);
+
+  useEffect(() => {
+    if (!activeProfileId || typeof window === "undefined") {
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(inboxSeenStorageKey, JSON.stringify(seenInboxItemIds));
+    } catch {
+      // Ignore storage persistence failures and keep the in-memory badge state.
+    }
+  }, [activeProfileId, inboxSeenStorageKey, seenInboxItemIds]);
+
+  useEffect(() => {
     if (!isInboxOpen || inboxItems.length === 0) {
       return;
     }
@@ -1898,7 +1924,6 @@ export default function HomePage() {
                 <p className="eyebrow">Inbox</p>
                 <h2>Social updates</h2>
               </div>
-              <span className="badge">{inboxCount}</span>
             </div>
             {inboxItems.length === 0 ? (
               <p className="empty-copy">Friend requests and kudos will show up here.</p>
