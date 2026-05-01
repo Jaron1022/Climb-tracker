@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import clsx from "clsx";
 import { EMBLEM_DEFINITIONS, getUnlockedEmblems, normalizeSelectedEmblems } from "@/lib/emblems";
 import { APP_THEMES, normalizeSelectedTheme } from "@/lib/themes";
-import { CLIMB_COLORS, CLIMB_GRADES, FLASH_XP_MULTIPLIER, GRADE_MODIFIER_MULTIPLIERS, STYLE_TAG_GROUPS, climbToXp, createDefaultForm, formatLocalDateKey, gradeToXp } from "@/lib/xp";
+import { CLIMB_COLORS, CLIMB_GRADES, FLASH_XP_MULTIPLIER, GRADE_MODIFIER_MULTIPLIERS, GRADED_CLIMBS, STYLE_TAG_GROUPS, climbToXp, createDefaultForm, formatLocalDateKey, gradeRank, gradeToXp, isGradedGrade } from "@/lib/xp";
 import { uploadPhoto } from "@/lib/local-store";
 import {
   buildLeaderboardScore,
@@ -748,8 +748,8 @@ export default function HomePage() {
       const climbPayload: Omit<ClimbInsert, "profile_id"> = {
         photo_url: photoUrl || null,
         grade: form.grade,
-        flashed: form.flashed,
-        grade_modifier: form.gradeModifier,
+        flashed: isGradedGrade(form.grade) ? form.flashed : false,
+        grade_modifier: isGradedGrade(form.grade) ? form.gradeModifier : null,
         style_tags: form.styleTags,
         wall_name: form.color.trim() || null,
         notes: form.notes.trim() || null,
@@ -814,7 +814,7 @@ export default function HomePage() {
       const projectPayload: Omit<ProjectInsert, "profile_id"> = {
         photo_url: photoUrl || null,
         grade: form.grade,
-        grade_modifier: form.gradeModifier,
+        grade_modifier: isGradedGrade(form.grade) ? form.gradeModifier : null,
         style_tags: form.styleTags,
         wall_name: form.color.trim() || null,
         notes: form.notes.trim() || null,
@@ -1092,7 +1092,7 @@ export default function HomePage() {
       );
   }, [activeProfile, climbs, friends, selectedEmblems, stats.level, stats.personalBest]);
   const maxGradeCount = useMemo(
-    () => Math.max(1, ...CLIMB_GRADES.map((grade) => stats.completedByGrade[grade] ?? 0)),
+    () => Math.max(1, ...GRADED_CLIMBS.map((grade) => stats.completedByGrade[grade] ?? 0)),
     [stats.completedByGrade]
   );
   const filteredClimbs = useMemo(
@@ -1104,6 +1104,7 @@ export default function HomePage() {
         const matchesTag =
           normalizedQuery.length === 0 ||
           climb.style_tags.some((tag) => tag.toLowerCase().includes(normalizedQuery)) ||
+          climb.grade.toLowerCase().includes(normalizedQuery) ||
           climb.wall_name?.toLowerCase().includes(normalizedQuery) ||
           (normalizedQuery === "flash" && Boolean(climb.flashed));
 
@@ -1194,7 +1195,7 @@ export default function HomePage() {
 
   const selectedGradeCounts = progressRange === "ALL" ? stats.completedByGrade : progressStats.completedByGrade;
   const selectedGradeMax = useMemo(
-    () => Math.max(1, ...CLIMB_GRADES.map((grade) => selectedGradeCounts[grade] ?? 0)),
+    () => Math.max(1, ...GRADED_CLIMBS.map((grade) => selectedGradeCounts[grade] ?? 0)),
     [selectedGradeCounts]
   );
   const trendChart = useMemo(() => {
@@ -1347,7 +1348,7 @@ export default function HomePage() {
                       {session.sendCount > 0 ? <span className="mini-badge">{session.sendCount} sends</span> : null}
                       {session.projectCount > 0 ? <span className="mini-badge">{session.projectCount} project{session.projectCount > 1 ? "s" : ""}</span> : null}
                       {session.totalXp > 0 ? <span className="mini-badge ready">+{session.totalXp} XP</span> : null}
-                      <span className="mini-badge session-grade-badge">Top {session.hardestLabel}</span>
+                      {session.hardestLabel !== "Ungraded" ? <span className="mini-badge session-grade-badge">Top {session.hardestLabel}</span> : null}
                       {session.flashCount > 0 ? <span className="mini-badge ready">{session.flashCount} flash{session.flashCount > 1 ? "es" : ""}</span> : null}
                     </div>
                     {session.note ? <p className="muted helper-copy friend-session-note">{session.note}</p> : null}
@@ -1624,6 +1625,8 @@ export default function HomePage() {
               ? `Filtered by tag search "${historyTagQuery.trim()}"${historyGradeFilter === "All" ? "" : ` and ${historyGradeFilter}`}.`
               : historyGradeFilter === "All"
                 ? `Showing everything you have logged so far.`
+                : historyGradeFilter === "Ungraded"
+                  ? `Showing the climbs waiting on a posted grade so you can update them later in one place.`
                 : `Showing your ${historyGradeFilter} climbs so you can quickly see repeats and notes.`}
           </p>
           <label className="field history-search-field">
@@ -1648,6 +1651,8 @@ export default function HomePage() {
                   : "No climbs yet. Tap Add climb to log your first send."
                 : historyTagQuery.trim()
                   ? `No ${historyGradeFilter} climbs match "${historyTagQuery.trim()}".`
+                  : historyGradeFilter === "Ungraded"
+                    ? "No ungraded climbs waiting for cleanup right now."
                   : `No ${historyGradeFilter} climbs yet. Try another filter or log one.`}
             </p>
           ) : (
@@ -1690,7 +1695,11 @@ export default function HomePage() {
                   </div>
                   {climb.notes ? <p>{climb.notes}</p> : null}
                   <div className="climb-actions">
-                    <p className="xp-line">+{climbToXp(climb.grade, Boolean(climb.flashed), climb.grade_modifier ?? null)} XP</p>
+                    {climbToXp(climb.grade, Boolean(climb.flashed), climb.grade_modifier ?? null) > 0 ? (
+                      <p className="xp-line">+{climbToXp(climb.grade, Boolean(climb.flashed), climb.grade_modifier ?? null)} XP</p>
+                    ) : (
+                      <p className="xp-line">Ungraded</p>
+                    )}
                     <div className="climb-action-buttons">
                       <button className="secondary-button climb-edit-button" disabled={loading} onClick={() => openEditor(climb)} type="button">
                         Edit climb
@@ -1751,7 +1760,7 @@ export default function HomePage() {
               </button>
             </div>
             <div className="xp-info-grid">
-              {[CLIMB_GRADES.slice(0, 6), CLIMB_GRADES.slice(6)].map((column, index) => (
+              {[GRADED_CLIMBS.slice(0, 6), GRADED_CLIMBS.slice(6)].map((column, index) => (
                 <div className="xp-info-column" key={index}>
                   {column.map((grade) => (
                     <div className="xp-info-row" key={grade}>
@@ -2192,7 +2201,16 @@ export default function HomePage() {
                 <span>Grade</span>
                 <select
                   value={form.grade}
-                  onChange={(event) => setForm((current) => ({ ...current, grade: event.target.value as ClimbRow["grade"] }))}
+                  onChange={(event) =>
+                    setForm((current) => {
+                      const nextGrade = event.target.value as ClimbRow["grade"];
+                      return {
+                        ...current,
+                        grade: nextGrade,
+                        gradeModifier: isGradedGrade(nextGrade) ? current.gradeModifier : null
+                      };
+                    })
+                  }
                 >
                   {CLIMB_GRADES.map((grade) => (
                     <option key={grade} value={grade}>
@@ -2208,6 +2226,7 @@ export default function HomePage() {
                   {(["-", "+"] as const).map((modifier) => (
                     <button
                       className={clsx("modifier-button", form.gradeModifier === modifier && "selected")}
+                      disabled={!isGradedGrade(form.grade)}
                       key={modifier}
                       onClick={() =>
                         setForm((current) => ({
@@ -2230,11 +2249,13 @@ export default function HomePage() {
                 </div>
                 <input
                   checked={form.flashed}
+                  disabled={!isGradedGrade(form.grade)}
                   id="flash-toggle"
                   onChange={(event) => setForm((current) => ({ ...current, flashed: event.target.checked }))}
                   type="checkbox"
                 />
               </label>
+              {!isGradedGrade(form.grade) ? <p className="muted helper-copy">Ungraded sends stay out of XP and flash scoring until you update them later.</p> : null}
 
               <label className="field">
                 <span>Color</span>
@@ -2366,7 +2387,17 @@ export default function HomePage() {
                 <span>Grade</span>
                 <select
                   value={form.grade}
-                  onChange={(event) => setForm((current) => ({ ...current, grade: event.target.value as ClimbRow["grade"] }))}
+                  onChange={(event) =>
+                    setForm((current) => {
+                      const nextGrade = event.target.value as ClimbRow["grade"];
+                      return {
+                        ...current,
+                        grade: nextGrade,
+                        gradeModifier: isGradedGrade(nextGrade) ? current.gradeModifier : null,
+                        flashed: isGradedGrade(nextGrade) ? current.flashed : false
+                      };
+                    })
+                  }
                 >
                   {CLIMB_GRADES.map((grade) => (
                     <option key={grade} value={grade}>
@@ -2382,6 +2413,7 @@ export default function HomePage() {
                   {(["-", "+"] as const).map((modifier) => (
                     <button
                       className={clsx("modifier-button", form.gradeModifier === modifier && "selected")}
+                      disabled={!isGradedGrade(form.grade)}
                       key={modifier}
                       onClick={() =>
                         setForm((current) => ({
@@ -2396,6 +2428,7 @@ export default function HomePage() {
                   ))}
                 </div>
               </div>
+              {!isGradedGrade(form.grade) ? <p className="muted helper-copy">Ungraded projects stay grouped together until you come back and assign the real grade.</p> : null}
 
               <label className="field">
                 <span>Color</span>
@@ -3262,8 +3295,8 @@ export default function HomePage() {
                                     </div>
                                     <div className="tag-row friend-session-summary">
                                       <span className="mini-badge">{session.sendCount} sends</span>
-                                      <span className="mini-badge ready">+{session.totalXp} XP</span>
-                                      <span className="mini-badge session-grade-badge">Top {session.hardestLabel}</span>
+                                      {session.totalXp > 0 ? <span className="mini-badge ready">+{session.totalXp} XP</span> : null}
+                                      {session.hardestLabel !== "Ungraded" ? <span className="mini-badge session-grade-badge">Top {session.hardestLabel}</span> : null}
                                       {session.flashCount > 0 ? <span className="mini-badge ready">{session.flashCount} flash{session.flashCount > 1 ? "es" : ""}</span> : null}
                                     </div>
                                     {session.note ? <p className="muted helper-copy friend-session-note">{session.note}</p> : null}
@@ -3313,7 +3346,11 @@ export default function HomePage() {
                                                 {climb.notes ? <p className="muted friend-session-note">{climb.notes}</p> : null}
                                               </div>
                                               <div className="friend-session-climb-aside">
-                                                <span className="xp-line">+{climbToXp(climb.grade, Boolean(climb.flashed), climb.grade_modifier ?? null)} XP</span>
+                                                <span className="xp-line">
+                                                  {climbToXp(climb.grade, Boolean(climb.flashed), climb.grade_modifier ?? null) > 0
+                                                    ? `+${climbToXp(climb.grade, Boolean(climb.flashed), climb.grade_modifier ?? null)} XP`
+                                                    : "Ungraded"}
+                                                </span>
                                                 <span className="friend-session-photo-hint">Photo</span>
                                               </div>
                                             </button>
@@ -3333,7 +3370,11 @@ export default function HomePage() {
                                                 {climb.notes ? <p className="muted friend-session-note">{climb.notes}</p> : null}
                                               </div>
                                               <div className="friend-session-climb-aside">
-                                                <span className="xp-line">+{climbToXp(climb.grade, Boolean(climb.flashed), climb.grade_modifier ?? null)} XP</span>
+                                                <span className="xp-line">
+                                                  {climbToXp(climb.grade, Boolean(climb.flashed), climb.grade_modifier ?? null) > 0
+                                                    ? `+${climbToXp(climb.grade, Boolean(climb.flashed), climb.grade_modifier ?? null)} XP`
+                                                    : "Ungraded"}
+                                                </span>
                                               </div>
                                             </div>
                                           )
@@ -3468,7 +3509,7 @@ export default function HomePage() {
                 </div>
 
                 <div className="grade-breakdown progress-grade-breakdown">
-                  {CLIMB_GRADES.map((grade) => {
+                  {GRADED_CLIMBS.map((grade) => {
                     const count = selectedGradeCounts[grade] ?? 0;
                     const fillPercent = selectedGradeMax > 0 ? (count / selectedGradeMax) * 100 : 0;
                     return (
@@ -3957,7 +3998,7 @@ function historySessionPhotoScore(entry: (ClimbRow | ProjectRow) & { photo_url: 
 }
 
 function climbSortScoreFromProject(project: Pick<ProjectRow, "grade" | "grade_modifier" | "notes">) {
-  const gradeScore = CLIMB_GRADES.indexOf(project.grade) * 10;
+  const gradeScore = gradeRank(project.grade) * 10;
   const modifierScore = project.grade_modifier === "+" ? 2 : project.grade_modifier === "-" ? 0 : 1;
   const noteScore = project.notes ? 1 : 0;
 
@@ -4074,7 +4115,7 @@ function sessionPhotoScore(climb: FriendFeedClimb) {
 }
 
 function climbSortScore(climb: Pick<ClimbRow, "grade" | "grade_modifier" | "flashed">) {
-  const base = CLIMB_GRADES.indexOf(climb.grade);
+  const base = gradeRank(climb.grade);
   const modifierBoost = climb.grade_modifier === "+" ? 0.35 : climb.grade_modifier === "-" ? -0.35 : 0;
   const flashBoost = climb.flashed ? 0.08 : 0;
   return base + modifierBoost + flashBoost;

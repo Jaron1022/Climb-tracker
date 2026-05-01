@@ -1,4 +1,4 @@
-import { CLIMB_GRADES, climbToXp, formatLocalDateKey, levelFromXp, xpIntoCurrentLevel, xpNeededForNextLevel } from "./xp";
+import { CLIMB_GRADES, GRADED_CLIMBS, climbToXp, formatLocalDateKey, gradeRank, isGradedGrade, levelFromXp, xpIntoCurrentLevel, xpNeededForNextLevel } from "./xp";
 import type { ClimbRow, Grade, GradeModifier, ProjectRow, StyleTag } from "./types";
 
 export const PROGRESS_RANGES = ["1W", "1M", "3M", "1Y", "ALL"] as const;
@@ -15,6 +15,7 @@ type ProgressBucket = {
 
 export function buildStats(climbs: ClimbRow[]) {
   const completedClimbs = climbs.filter((climb) => climb.status === "completed");
+  const scoredClimbs = completedClimbs.filter((climb) => isGradedGrade(climb.grade));
   const xp = completedClimbs.reduce(
     (total, climb) => total + climbToXp(climb.grade, Boolean(climb.flashed), climb.grade_modifier ?? null),
     0
@@ -38,7 +39,7 @@ export function buildStats(climbs: ClimbRow[]) {
     .map(([tag]) => tag);
 
   const personalBestClimb =
-    completedClimbs
+    scoredClimbs
       .slice()
       .sort((left, right) => compareClimbsForBest(right, left))[0] ?? null;
 
@@ -65,18 +66,19 @@ export function buildProgressStats(
 ) {
   const completedClimbs = climbs.filter((climb) => climb.status === "completed");
   const filteredClimbs = filterClimbsByRange(completedClimbs, range);
+  const scoredClimbs = filteredClimbs.filter((climb) => isGradedGrade(climb.grade));
   const { buckets, cadenceLabel } = buildProgressBuckets(filteredClimbs, range);
   const dailyRecap = buildDailyRecap(completedClimbs, projects, sessionNotesByDate);
   const activeWeeks = countUniqueWeeks(filteredClimbs);
   const totalWeeks = countCalendarWeeksInRange(range, filteredClimbs);
-  const flashedClimbs = filteredClimbs.filter((climb) => climb.flashed);
+  const flashedClimbs = scoredClimbs.filter((climb) => climb.flashed);
   const flashCount = flashedClimbs.length;
   const totalXp = filteredClimbs.reduce(
     (total, climb) => total + climbToXp(climb.grade, Boolean(climb.flashed), climb.grade_modifier ?? null),
     0
   );
   const topClimb =
-    filteredClimbs
+    scoredClimbs
       .slice()
       .sort((left, right) => compareClimbsForBest(right, left))[0] ?? null;
   const tagCounts = countTags(filteredClimbs);
@@ -96,8 +98,8 @@ export function buildProgressStats(
   const consistencyPercent = Math.min((activeWeeks / totalWeeks) * 100, 100);
   const previousTotal = buckets.slice(0, Math.floor(buckets.length / 2)).reduce((sum, bucket) => sum + bucket.climbCount, 0);
   const recentTotal = buckets.slice(Math.floor(buckets.length / 2)).reduce((sum, bucket) => sum + bucket.climbCount, 0);
-  const flashRateByGrade = CLIMB_GRADES.map((grade) => {
-    const gradeClimbs = filteredClimbs.filter((climb) => climb.grade === grade);
+  const flashRateByGrade = GRADED_CLIMBS.map((grade) => {
+    const gradeClimbs = scoredClimbs.filter((climb) => climb.grade === grade);
     const flashedAtGrade = gradeClimbs.filter((climb) => climb.flashed).length;
 
     return {
@@ -468,7 +470,7 @@ function countTags(climbs: ClimbRow[]) {
 }
 
 function compareClimbsForBest(left: ClimbRow, right: ClimbRow) {
-  const gradeDelta = CLIMB_GRADES.indexOf(left.grade) - CLIMB_GRADES.indexOf(right.grade);
+  const gradeDelta = gradeRank(left.grade) - gradeRank(right.grade);
   if (gradeDelta !== 0) {
     return gradeDelta;
   }
@@ -521,7 +523,7 @@ function buildDailyRecap(climbs: ClimbRow[], projects: ProjectRow[], sessionNote
     0
   );
   const flashedCount = dayClimbs.filter((climb) => climb.flashed).length;
-  const topClimb = dayClimbs[0];
+  const topClimb = dayClimbs.find((climb) => isGradedGrade(climb.grade)) ?? null;
   const topStyle = mostCommonTag(dayClimbs);
   const groups = buildDailyRecapGroups(dayClimbs);
   const maxGroupCount = Math.max(1, ...groups.map((group) => group.count));
@@ -577,7 +579,7 @@ function buildDailyRecapGroups(climbs: ClimbRow[]) {
 function compareGradeLabel(left: string, right: string) {
   const leftParsed = parseGradeLabel(left);
   const rightParsed = parseGradeLabel(right);
-  const gradeDelta = CLIMB_GRADES.indexOf(leftParsed.grade) - CLIMB_GRADES.indexOf(rightParsed.grade);
+  const gradeDelta = gradeRank(leftParsed.grade) - gradeRank(rightParsed.grade);
 
   if (gradeDelta !== 0) {
     return gradeDelta;
@@ -648,7 +650,7 @@ function buildDailyRecapSubheadline(sends: number, projectCount: number, topGrad
 }
 
 function compareProjectsForBest(left: ProjectRow, right: ProjectRow) {
-  const gradeDelta = CLIMB_GRADES.indexOf(left.grade) - CLIMB_GRADES.indexOf(right.grade);
+  const gradeDelta = gradeRank(left.grade) - gradeRank(right.grade);
   if (gradeDelta !== 0) {
     return gradeDelta;
   }
@@ -668,16 +670,16 @@ function formatAverageFlashGrade(climbs: ClimbRow[]) {
 
   const baseIndex = Math.max(
     0,
-    Math.min(CLIMB_GRADES.length - 1, Math.floor(averageScore))
+    Math.min(GRADED_CLIMBS.length - 1, Math.floor(averageScore))
   );
-  const baseGrade = CLIMB_GRADES[baseIndex];
+  const baseGrade = GRADED_CLIMBS[baseIndex];
   const remainder = averageScore - baseIndex;
 
-  if (remainder >= 0.67 && baseIndex < CLIMB_GRADES.length - 1) {
-    return `${CLIMB_GRADES[baseIndex + 1]}-`;
+  if (remainder >= 0.67 && baseIndex < GRADED_CLIMBS.length - 1) {
+    return `${GRADED_CLIMBS[baseIndex + 1]}-`;
   }
 
-  if (remainder >= 0.33 && baseIndex < CLIMB_GRADES.length - 1) {
+  if (remainder >= 0.33 && baseIndex < GRADED_CLIMBS.length - 1) {
     return `${baseGrade}+`;
   }
 
@@ -685,7 +687,7 @@ function formatAverageFlashGrade(climbs: ClimbRow[]) {
 }
 
 function gradeScore(grade: Grade, modifier: GradeModifier) {
-  const baseIndex = CLIMB_GRADES.indexOf(grade);
+  const baseIndex = gradeRank(grade);
 
   if (modifier === "+") {
     return baseIndex + 0.35;

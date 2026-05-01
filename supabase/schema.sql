@@ -27,7 +27,7 @@ create table if not exists public.climbs (
   id uuid primary key default gen_random_uuid(),
   profile_id uuid not null references public.profiles (id) on delete cascade,
   photo_url text,
-  grade text not null check (grade in ('VB', 'V0', 'V1', 'V2', 'V3', 'V4', 'V5', 'V6', 'V7', 'V8', 'V9', 'V10')),
+  grade text not null check (grade in ('Ungraded', 'VB', 'V0', 'V1', 'V2', 'V3', 'V4', 'V5', 'V6', 'V7', 'V8', 'V9', 'V10')),
   flashed boolean not null default false,
   grade_modifier text check (grade_modifier in ('-', '+') or grade_modifier is null),
   style_tags text[] not null default '{}',
@@ -42,7 +42,7 @@ create table if not exists public.projects (
   id uuid primary key default gen_random_uuid(),
   profile_id uuid not null references public.profiles (id) on delete cascade,
   photo_url text,
-  grade text not null check (grade in ('VB', 'V0', 'V1', 'V2', 'V3', 'V4', 'V5', 'V6', 'V7', 'V8', 'V9', 'V10')),
+  grade text not null check (grade in ('Ungraded', 'VB', 'V0', 'V1', 'V2', 'V3', 'V4', 'V5', 'V6', 'V7', 'V8', 'V9', 'V10')),
   grade_modifier text check (grade_modifier in ('-', '+') or grade_modifier is null),
   style_tags text[] not null default '{}',
   wall_name text,
@@ -80,6 +80,20 @@ create table if not exists public.session_notes (
   created_at timestamptz not null default timezone('utc'::text, now()),
   updated_at timestamptz not null default timezone('utc'::text, now())
 );
+
+alter table public.climbs
+drop constraint if exists climbs_grade_check;
+
+alter table public.climbs
+add constraint climbs_grade_check
+check (grade in ('Ungraded', 'VB', 'V0', 'V1', 'V2', 'V3', 'V4', 'V5', 'V6', 'V7', 'V8', 'V9', 'V10'));
+
+alter table public.projects
+drop constraint if exists projects_grade_check;
+
+alter table public.projects
+add constraint projects_grade_check
+check (grade in ('Ungraded', 'VB', 'V0', 'V1', 'V2', 'V3', 'V4', 'V5', 'V6', 'V7', 'V8', 'V9', 'V10'));
 
 create index if not exists climbs_profile_id_created_at_idx on public.climbs (profile_id, climbed_on desc, created_at desc);
 create index if not exists projects_profile_id_last_worked_idx on public.projects (profile_id, last_worked_on desc, created_at desc);

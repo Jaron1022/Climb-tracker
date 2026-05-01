@@ -1,6 +1,7 @@
 import type { ClimbForm, Grade, GradeModifier, StyleTag } from "./types";
 
 export const CLIMB_GRADES = [
+  "Ungraded",
   "VB",
   "V0",
   "V1",
@@ -14,6 +15,11 @@ export const CLIMB_GRADES = [
   "V9",
   "V10"
 ] as const;
+
+export const GRADED_CLIMBS = CLIMB_GRADES.filter((grade) => grade !== "Ungraded") as Exclude<
+  (typeof CLIMB_GRADES)[number],
+  "Ungraded"
+>[];
 
 export const STYLE_TAGS = [
   "slab",
@@ -75,6 +81,7 @@ export function createDefaultForm(): ClimbForm {
 export const DEFAULT_FORM: ClimbForm = createDefaultForm();
 
 const XP_BY_GRADE: Record<Grade, number> = {
+  Ungraded: 0,
   VB: 1,
   V0: 2,
   V1: 4,
@@ -98,6 +105,18 @@ export const FLASH_XP_MULTIPLIER = 1.35;
 
 export function gradeToXp(grade: Grade) {
   return XP_BY_GRADE[grade];
+}
+
+export function isGradedGrade(grade: Grade): grade is (typeof GRADED_CLIMBS)[number] {
+  return grade !== "Ungraded";
+}
+
+export function gradeRank(grade: Grade) {
+  if (!isGradedGrade(grade)) {
+    return -1;
+  }
+
+  return GRADED_CLIMBS.indexOf(grade);
 }
 
 export function climbToXp(grade: Grade, flashed = false, gradeModifier: GradeModifier = null) {
@@ -150,12 +169,12 @@ export function hasGraduatedGrade(completedByGrade: Record<Grade, number>, grade
 }
 
 export function nextGradeRecommendation(completedByGrade: Record<Grade, number>) {
-  for (let index = 0; index < CLIMB_GRADES.length; index += 1) {
-    const grade = CLIMB_GRADES[index];
+  for (let index = 0; index < GRADED_CLIMBS.length; index += 1) {
+    const grade = GRADED_CLIMBS[index];
     const completions = completedByGrade[grade] ?? 0;
 
     if (completions >= 3) {
-      const nextGrade = CLIMB_GRADES[index + 1];
+      const nextGrade = GRADED_CLIMBS[index + 1];
       if (nextGrade) {
         return `You have ${completions} sends at ${grade}. Try more ${nextGrade}s next session.`;
       }

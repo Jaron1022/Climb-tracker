@@ -1,13 +1,12 @@
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { buildStats } from "@/lib/stats";
-import { climbToXp, levelFromXp } from "@/lib/xp";
+import { climbToXp, isGradedGrade, levelFromXp } from "@/lib/xp";
 import type {
   ClimbRow,
   FriendFeedClimb,
   FriendshipRow,
   FriendSummary,
   IncomingFriendRequest,
-  Grade,
   ProfileSearchRow,
   ReceivedKudosInboxItem,
   SessionNoteRow,
@@ -176,7 +175,7 @@ export async function fetchFriends(userId: string) {
       const friendProfile = profilesById.get(friendId);
 
       const activeDays7 = new Set(recentClimbs.map((climb) => climb.climbed_on)).size;
-      const uniqueGrades7 = new Set(recentClimbs.map((climb) => climb.grade)).size;
+      const uniqueGrades7 = new Set(recentClimbs.filter((climb) => isGradedGrade(climb.grade)).map((climb) => climb.grade)).size;
       const leaderboardBreakdown = getLeaderboardScoreBreakdown(weeklyXp, recentClimbs.length, activeDays7, uniqueGrades7);
 
       return {
@@ -189,7 +188,7 @@ export async function fetchFriends(userId: string) {
         createdAt: item.responded_at ?? item.created_at,
         level: levelFromXp(friendXp),
         totalSends: friendClimbs.length,
-        personalBest: friendStats.personalBest as Grade,
+        personalBest: friendStats.personalBest,
         weeklyXp7: weeklyXp,
         recentSends7: recentClimbs.length,
         activeDays7,

@@ -137,7 +137,7 @@ export type FriendSummary = {
   createdAt: string;
   level: number;
   totalSends: number;
-  personalBest: Grade;
+  personalBest: string;
   weeklyXp7: number;
   recentSends7: number;
   activeDays7: number;
