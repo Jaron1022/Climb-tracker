@@ -1602,6 +1602,13 @@ export default function HomePage() {
             >
               All
             </button>
+            <button
+              className={clsx("filter-chip filter-chip-all", historyGradeFilter === "Ungraded" && "active")}
+              onClick={() => setHistoryGradeFilter("Ungraded")}
+              type="button"
+            >
+              Ungraded
+            </button>
             {historyGradeFilter !== "All" || historyTagQuery.trim() ? (
               <button className="history-clear-button" onClick={clearHistoryFilters} type="button">
                 × Clear
@@ -1609,7 +1616,7 @@ export default function HomePage() {
             ) : null}
           </div>
           <div className="history-filter-row">
-            {CLIMB_GRADES.map((grade) => (
+            {GRADED_CLIMBS.map((grade) => (
               <button
                 className={clsx("filter-chip", historyGradeFilter === grade && "active")}
                 key={grade}

@@ -68,7 +68,7 @@ export function formatLocalDateKey(date: Date) {
 
 export function createDefaultForm(): ClimbForm {
   return {
-    grade: "VB" as Grade,
+    grade: "Ungraded" as Grade,
     flashed: false,
     gradeModifier: null,
     styleTags: [] as StyleTag[],
