@@ -748,7 +748,7 @@ export default function HomePage() {
       const climbPayload: Omit<ClimbInsert, "profile_id"> = {
         photo_url: photoUrl || null,
         grade: form.grade,
-        flashed: isGradedGrade(form.grade) ? form.flashed : false,
+        flashed: form.flashed,
         grade_modifier: isGradedGrade(form.grade) ? form.gradeModifier : null,
         style_tags: form.styleTags,
         wall_name: form.color.trim() || null,
@@ -2256,13 +2256,12 @@ export default function HomePage() {
                 </div>
                 <input
                   checked={form.flashed}
-                  disabled={!isGradedGrade(form.grade)}
                   id="flash-toggle"
                   onChange={(event) => setForm((current) => ({ ...current, flashed: event.target.checked }))}
                   type="checkbox"
                 />
               </label>
-              {!isGradedGrade(form.grade) ? <p className="muted helper-copy">Ungraded sends stay out of XP and flash scoring until you update them later.</p> : null}
+              {!isGradedGrade(form.grade) ? <p className="muted helper-copy">Ungraded sends can still be marked as flash, but they stay out of XP and grade-based scoring until you update them later.</p> : null}
 
               <label className="field">
                 <span>Color</span>
@@ -2400,8 +2399,7 @@ export default function HomePage() {
                       return {
                         ...current,
                         grade: nextGrade,
-                        gradeModifier: isGradedGrade(nextGrade) ? current.gradeModifier : null,
-                        flashed: isGradedGrade(nextGrade) ? current.flashed : false
+                        gradeModifier: isGradedGrade(nextGrade) ? current.gradeModifier : null
                       };
                     })
                   }
